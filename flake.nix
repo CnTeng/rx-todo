@@ -25,6 +25,36 @@
         "aarch64-linux"
       ];
 
-      imports = [ ./flakes ];
+      imports = [
+        inputs.pre-commit.flakeModule
+        inputs.treefmt.flakeModule
+      ];
+
+      perSystem =
+        { config, pkgs, ... }:
+        {
+          devShells.default = pkgs.mkShell {
+            packages = with pkgs; [
+              go
+              config.treefmt.build.wrapper
+            ];
+            shellHook = config.pre-commit.installationScript;
+          };
+
+          pre-commit.settings.hooks = {
+            commitizen.enable = true;
+            treefmt.enable = true;
+          };
+
+          treefmt = {
+            projectRootFile = "flake.nix";
+
+            programs = {
+              gofmt.enable = true;
+              nixfmt.enable = true;
+              prettier.enable = true;
+            };
+          };
+        };
     };
 }
