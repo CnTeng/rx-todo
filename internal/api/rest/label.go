@@ -36,7 +36,7 @@ func (h *handler) getLabel(c *gin.Context) {
 		return
 	}
 
-	label, err := h.GetLabel(user, id)
+	label, err := h.GetLabelByID(user, id)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
@@ -67,16 +67,22 @@ func (h *handler) updateLabel(c *gin.Context) {
 		return
 	}
 
-	label := &model.Label{}
-	if err := c.BindJSON(&label); err != nil {
+	label, err := h.GetLabelByID(user, id)
+	if err != nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	r := new(model.UpdateLabelRequest)
+	if err := c.BindJSON(r); err != nil {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-	label.ID = id
+	r.Patch(label)
 
-	label, err = h.UpdateLabel(user, label)
+	label, err = h.UpdateLabel(label)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 

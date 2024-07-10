@@ -17,22 +17,21 @@ Accept: application/json
 
 
 ### Get a label
-GET http://localhost:8080/labels/7 HTTP/1.1
+GET http://localhost:8080/labels/10 HTTP/1.1
 Authorization: Bearer BVKnzIdWy_0VeM_MNigo4L3Ii2JXjGlyEW8q3tL-ZXM=
 Accept: application/json
 
 
 ### Delete a label
-DELETE http://localhost:8080/labels/7 HTTP/1.1
+DELETE http://localhost:8080/labels/10 HTTP/1.1
 Authorization: Bearer BVKnzIdWy_0VeM_MNigo4L3Ii2JXjGlyEW8q3tL-ZXM=
 Accept: application/json
 
 ### Update a label
-PUT http://localhost:8080/labels/8 HTTP/1.1
+PUT http://localhost:8080/labels/11 HTTP/1.1
 Authorization: Bearer BVKnzIdWy_0VeM_MNigo4L3Ii2JXjGlyEW8q3tL-ZXM=
 Accept: application/json
 
 {
-    "name": "test4",
-    "color": "#000000"
+    "name": "test7"
 }

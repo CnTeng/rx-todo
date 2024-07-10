@@ -14,3 +14,17 @@ type Label struct {
 	// UpdatedAt is the time the label was updated, Read-only.
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+type UpdateLabelRequest struct {
+	Name  *string `json:"name"`
+	Color *string `json:"color"`
+}
+
+func (r *UpdateLabelRequest) Patch(label *Label) {
+	if r.Name != nil {
+		label.Name = *r.Name
+	}
+	if r.Color != nil {
+		label.Color = *r.Color
+	}
+}
