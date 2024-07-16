@@ -9,9 +9,8 @@ type Label struct {
 	Name   string `json:"name"`
 	Color  string `json:"color"`
 
-	// CreatedAt is the time the label was created, Read-only.
+	// Meta fields
 	CreatedAt time.Time `json:"created_at"`
-	// UpdatedAt is the time the label was updated, Read-only.
 	UpdatedAt time.Time `json:"updated_at"`
 }
 

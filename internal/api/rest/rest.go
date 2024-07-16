@@ -7,16 +7,15 @@ import (
 
 type handler struct {
 	*database.DB
+	Engine *gin.Engine
 }
 
 func Serve(db *database.DB, r *gin.Engine) {
-	h := handler{db}
+	h := handler{DB: db, Engine: r}
 
-	labelGroup := r.Group("/labels")
-
-	labelGroup.POST("", h.createLabel)
-	labelGroup.GET(":id", h.getLabel)
-	labelGroup.GET("", h.getLabels)
-	labelGroup.PUT(":id", h.updateLabel)
-	labelGroup.DELETE(":id", h.deleteLabel)
+	h.registerProjectRoutes()
+	h.registerLabelRoutes()
+	h.registerTaskRoutes()
+	h.registerUserRoutes()
+	h.registerTokenRoutes()
 }

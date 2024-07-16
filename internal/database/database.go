@@ -2,26 +2,26 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 
-	"github.com/CnTeng/rx-todo/internal/model"
 	_ "github.com/lib/pq"
 )
 
 type DB struct {
-	sql.DB
+	*sql.DB
 }
 
 func NewDB(dsn string) (DB, error) {
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		return DB{}, err
+		return DB{nil}, err
 	}
 
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(10)
 	db.SetConnMaxLifetime(0)
 
-	return DB{*db}, nil
+	return DB{db}, nil
 }
 
 func (db *DB) Migrate() error {
@@ -44,34 +44,10 @@ func (db *DB) Migrate() error {
 	return nil
 }
 
-func (db *DB) CreateUser(user *model.User) error {
-	var hashedPassword string
-	if user.Password != "" {
-		var err error
-		hashedPassword, err = model.HashPassword(user.Password)
-		if err != nil {
-			return err
-		}
-	}
-
-	query := `
-		INSERT INTO users (username, PASSWORD, email, timezone)
-		  VALUES (LOWER($1), $2, $3, $4)
-  `
-
-	tx, err := db.Begin()
+func (db *DB) execSimpleQuery(query string, userID, id int64) error {
+	_, err := db.Exec(query, userID, id)
 	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(query, user.Username, hashedPassword, user.Email, user.Timezone)
-	if err != nil {
-		_ = tx.Rollback()
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
+		return fmt.Errorf("database: unable to exec query: %v", err)
 	}
 
 	return nil

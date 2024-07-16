@@ -1,0 +1,38 @@
+@token="Bearer fYORx5uRpBPyObqU84DyOkHtDIheBB2fyARsOJ5Veqo="
+
+# Create a new token
+POST http://localhost:8080/token HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+    "user_id": 26,
+    "password": "test123456"
+}
+
+###
+
+# Get tokens
+GET http://localhost:8080/tokens HTTP/1.1
+Accept: application/json
+Authorization: {{token}}
+
+###
+
+# Update a tokens
+
+PUT http://localhost:8080/tokens/10 HTTP/1.1
+Authorization: {{token}}
+Accept: application/json
+
+{
+    "user_id": 21,
+    "password": "test123456"
+}
+
+###
+
+# Delete a label
+DELETE http://localhost:8080/tokens/8 HTTP/1.1
+Authorization: {{token}}
+Accept: application/json

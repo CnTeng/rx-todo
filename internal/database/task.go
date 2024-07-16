@@ -2,219 +2,239 @@ package database
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/CnTeng/rx-todo/internal/model"
 )
 
-func (db *DB) AddTask(user int64, r *model.TaskAddRequest) error {
-	query := `
-    INSERT INTO tasks (
-      user_id,
-      content,
-      description,
-      due,
-      duration,
-      priority,
-      project_id,
-      parent_id,
-      child_order 
-    )
-    VALUES ($1, $2, $3, ROW($4, $5), $6, $7, $8, $9, $10)
-  `
+func (db *DB) CreateTask(user int64, task *model.Task) (*model.Task, error) {
+	var dueDate *time.Time
+	var dueRecurring *bool
+	var durationAmount *int
+	var durationUnit *string
 
-	_, err := db.Exec(query, user, r.Content, r.Description, r.Due.Data, r.Due.Recurring, r.Duration, r.Priority, r.ProjectID, r.ParentID, r.ChildOrder)
-	if err != nil {
-		return fmt.Errorf("database: unable to add task: %v", err)
+	if task.Due != nil {
+		dueDate = task.Due.Date
+		dueRecurring = task.Due.Recurring
 	}
 
-	return nil
+	if task.Duration != nil {
+		durationAmount = task.Duration.Amount
+		durationUnit = task.Duration.Unit
+	}
+
+	query := `
+		INSERT INTO tasks 
+			(user_id, content, description, due, duration, priority, project_id, child_order)
+		VALUES 
+			($1, $2, $3, ROW($4, $5), ROW($6, $7), $8, $9, $10)
+		RETURNING 
+			id, created_at, updated_at
+	`
+
+	err := db.QueryRow(
+		query,
+		user,
+		task.Content,
+		task.Description,
+		dueDate,
+		dueRecurring,
+		durationAmount,
+		durationUnit,
+		task.Priority,
+		task.ProjectID,
+		task.ChildOrder,
+	).Scan(&task.ID, &task.CreatedAt, &task.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("database: unable to create task: %v", err)
+	}
+
+	return task, nil
 }
 
-func (db *DB) UpdateTask(r *model.TaskUpdateRequest) error {
+func (db *DB) GetTaskByID(userID, id int64) (*model.Task, error) {
+	var dueData *time.Time
+	var dueRecurring *bool
+	var durationAmount *int
+	var durationUnit *string
+
+	task := new(model.Task)
 	query := `
-    UPDATE tasks
-    SET
-      content = $2,
-      description = $3,
-      due = $4,
-      duration = $5,
-      priority = $6
-    WHERE id = $1
-  `
+		SELECT
+			id,
+			user_id,
+			content,
+			description,
+			(due).data,
+			(due).recurring,
+			(duration).amount,
+			(duration).unit,
+			priority,
+			project_id,
+			parent_id,
+			child_order,
+			done,
+			done_at,
+			archived,
+			archived_at,
+			created_at,
+			updated_at
+		FROM
+			tasks
+		WHERE
+			user_id = $1 AND id = $2
+	`
 
-	_, err := db.Exec(query, r.ID, r.Content, r.Description, r.Due, r.Duration, r.Priority)
-	if err != nil {
-		return fmt.Errorf("database: unable to update task: %v", err)
-	}
-
-	return nil
-}
-
-func (db *DB) MoveTask(r *model.TaskMoveRequest) error {
-	query := `
-    UPDATE tasks
-    SET
-      project_id = $2,
-      parent_id = $3
-    WHERE id = $1
-  `
-	_, err := db.Exec(query, r.ID, r.ProjectID, r.ParentID)
-	if err != nil {
-		return fmt.Errorf("database: unable to move task: %v", err)
-	}
-
-	return nil
-}
-
-func (db *DB) ReorderTasks(r *model.TaskReorderRequest) error {
-	tx, err := db.Begin()
-	if err != nil {
-		return fmt.Errorf("database: unable to reorder tasks: %v", err)
-	}
-
-	for _, task := range r.Tasks {
-		query := `
-      UPDATE tasks
-      SET
-        child_order = $2
-      WHERE id = $1
-    `
-		_, err := tx.Exec(query, task.ID, task.ChildOrder)
-		if err != nil {
-			tx.Rollback()
-			return fmt.Errorf("database: unable to reorder tasks: %v", err)
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("database: unable to reorder tasks: %v", err)
-	}
-
-	return nil
-}
-
-func (db *DB) DeleteTask(r *model.TaskDeleteRequest) error {
-	query := `
-    DELETE FROM tasks
-    WHERE id = $1
-  `
-	_, err := db.Exec(query, r.ID)
-	if err != nil {
-		return fmt.Errorf("database: unable to delete task: %v", err)
-	}
-
-	return nil
-}
-
-func (db *DB) DoneTask(r *model.TaskDoneRequest) error {
-	query := `
-    UPDATE tasks
-    SET
-      done = TRUE,
-      done_at = NOW()
-    WHERE id = $1
-  `
-	_, err := db.Exec(query, r.ID)
-	if err != nil {
-		return fmt.Errorf("database: unable to mark task as done: %v", err)
-	}
-
-	return nil
-}
-
-func (db *DB) UnDoneTask(r *model.TaskUnDoneRequest) error {
-	query := `
-    UPDATE tasks
-    SET
-      done = FALSE,
-      done_at = NULL
-    WHERE id = $1
-  `
-	_, err := db.Exec(query, r.ID)
-	if err != nil {
-		return fmt.Errorf("database: unable to mark task as undone: %v", err)
-	}
-
-	return nil
-}
-
-func (db *DB) ArchiveTask(r *model.TaskDeleteRequest) error {
-	query := `
-    UPDATE tasks
-    SET
-      archive = TRUE,
-      archive_at = NOW()
-    WHERE id = $1
-  `
-	_, err := db.Exec(query, r.ID)
-	if err != nil {
-		return fmt.Errorf("database: unable to archive task: %v", err)
-	}
-
-	return nil
-}
-
-func (db *DB) UnArchiveTask(r *model.TaskDeleteRequest) error {
-	query := `
-    UPDATE tasks
-    SET
-      archive = FALSE,
-      archive_at = NULL
-    WHERE id = $1
-  `
-	_, err := db.Exec(query, r.ID)
-	if err != nil {
-		return fmt.Errorf("database: unable to unarchive task: %v", err)
-	}
-
-	return nil
-}
-
-func (db *DB) GetTask(r *model.TaskGetRequest) (*model.Task, error) {
-	query := `
-    SELECT
-      id,
-      user_id,
-      content,
-      description,
-      due,
-      duration,
-      priority,
-      project_id,
-      parent_id,
-      child_order,
-      done,
-      done_at,
-      archive,
-      archive_at,
-      created_at,
-      updated_at
-    FROM tasks
-    WHERE id = $1
-  `
-
-	t := &model.Task{}
-	err := db.QueryRow(query, r.ID).Scan(
-		&t.ID,
-		&t.UserID,
-		&t.Content,
-		&t.Description,
-		&t.Due,
-		&t.Duration,
-		&t.Priority,
-		&t.ProjectID,
-		&t.ParentID,
-		&t.ChildOrder,
-		&t.Done,
-		&t.DoneAt,
-		&t.Archive,
-		&t.ArchiveAt,
-		&t.CreatedAt,
-		&t.UpdatedAt,
+	err := db.QueryRow(query, userID, id).Scan(
+		&task.ID,
+		&task.UserID,
+		&task.Content,
+		&task.Description,
+		&dueData,
+		&dueRecurring,
+		&durationAmount,
+		&durationUnit,
+		&task.Priority,
+		&task.ProjectID,
+		&task.ParentID,
+		&task.ChildOrder,
+		&task.Done,
+		&task.DoneAt,
+		&task.Archived,
+		&task.ArchivedAt,
+		&task.CreatedAt,
+		&task.UpdatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("database: unable to get task: %v", err)
 	}
 
-	return t, nil
+	if (dueData != nil) && (dueRecurring != nil) {
+		task.Due = &model.Due{Date: dueData, Recurring: dueRecurring}
+	}
+
+	if (durationAmount != nil) && (durationUnit != nil) {
+		task.Duration = &model.Duration{Amount: durationAmount, Unit: durationUnit}
+	}
+
+	return task, nil
+}
+
+func (db *DB) GetTasks(user int64) ([]*model.Task, error) {
+	var tasks []*model.Task
+
+	var dueData *time.Time
+	var dueRecurring *bool
+	var durationAmount *int
+	var durationUnit *string
+
+	query := `
+		SELECT
+			id,
+			user_id,
+			content,
+			description,
+			(due).data,
+			(due).recurring,
+			(duration).amount,
+			(duration).unit,
+			priority,
+			project_id,
+			parent_id,
+			child_order,
+			done,
+			done_at,
+			archived,
+			archived_at,
+			created_at,
+			updated_at
+		FROM
+			tasks
+		WHERE
+			user_id = $1
+	`
+
+	rows, err := db.Query(query, user)
+	if err != nil {
+		return nil, fmt.Errorf("database: unable to get tasks: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var task model.Task
+
+		if err := rows.Scan(
+			&task.ID,
+			&task.UserID,
+			&task.Content,
+			&task.Description,
+			&dueData,
+			&dueRecurring,
+			&durationAmount,
+			&durationUnit,
+			&task.Priority,
+			&task.ProjectID,
+			&task.ParentID,
+			&task.ChildOrder,
+			&task.Done,
+			&task.DoneAt,
+			&task.Archived,
+			&task.ArchivedAt,
+			&task.CreatedAt,
+			&task.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("database: unable to get tasks: %v", err)
+		}
+
+		if (dueData != nil) && (dueRecurring != nil) {
+			task.Due = &model.Due{Date: dueData, Recurring: dueRecurring}
+		}
+
+		if (durationAmount != nil) && (durationUnit != nil) {
+			task.Duration = &model.Duration{Amount: durationAmount, Unit: durationUnit}
+		}
+
+		tasks = append(tasks, &task)
+	}
+
+	return tasks, nil
+}
+
+func (db *DB) UpdateTask(task *model.Task) (*model.Task, error) {
+	query := `
+    UPDATE 
+			tasks
+    SET
+      content = $3,
+      description = $4,
+      due = $5,
+      duration = $6,
+      priority = $7,
+			project_id = $8,
+			parent_id = $9,
+			child_order = $10,
+			updated_at = now()
+    WHERE 
+			id = $1 AND user_id = $2
+		RETURNING
+			updated_at
+  `
+
+	err := db.QueryRow(query, task.ID, task.UserID, task.Content, task.Description, task.Due, task.Duration, task.Priority, task.ProjectID, task.ParentID, task.ChildOrder).Scan(&task.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("database: unable to update task: %v", err)
+	}
+
+	return task, nil
+}
+
+func (db *DB) DeleteTask(user, id int64) error {
+	query := `DELETE FROM tasks WHERE id = $1 AND user_id = $2`
+
+	_, err := db.Exec(query, id, user)
+	if err != nil {
+		return fmt.Errorf("database: unable to delete tasks: %v", err)
+	}
+
+	return nil
 }

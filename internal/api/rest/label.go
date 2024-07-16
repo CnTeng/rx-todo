@@ -8,8 +8,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func (h *handler) registerLabelRoutes() {
+	group := h.Engine.Group("/labels")
+
+	group.POST("", h.createLabel)
+	group.GET(":id", h.getLabel)
+	group.GET("", h.getLabels)
+	group.PUT(":id", h.updateLabel)
+	group.DELETE(":id", h.deleteLabel)
+}
+
 func (h *handler) createLabel(c *gin.Context) {
-	user := c.GetInt64("user")
+	userID := c.GetInt64("user_id")
 
 	label := &model.Label{}
 	if err := c.BindJSON(label); err != nil {
@@ -17,9 +27,9 @@ func (h *handler) createLabel(c *gin.Context) {
 		return
 	}
 
-	label, err := h.CreateLabel(user, label)
+	label, err := h.CreateLabel(userID, label)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -27,7 +37,7 @@ func (h *handler) createLabel(c *gin.Context) {
 }
 
 func (h *handler) getLabel(c *gin.Context) {
-	user := c.GetInt64("user")
+	userID := c.GetInt64("user_id")
 	idStr := c.Param("id")
 
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -36,7 +46,7 @@ func (h *handler) getLabel(c *gin.Context) {
 		return
 	}
 
-	label, err := h.GetLabelByID(user, id)
+	label, err := h.GetLabelByID(userID, id)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
@@ -46,11 +56,11 @@ func (h *handler) getLabel(c *gin.Context) {
 }
 
 func (h *handler) getLabels(c *gin.Context) {
-	user := c.GetInt64("user")
+	userID := c.GetInt64("user_id")
 
-	labels, err := h.GetLabels(user)
+	labels, err := h.GetLabels(userID)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -58,7 +68,7 @@ func (h *handler) getLabels(c *gin.Context) {
 }
 
 func (h *handler) updateLabel(c *gin.Context) {
-	user := c.GetInt64("user")
+	userID := c.GetInt64("user_id")
 	idStr := c.Param("id")
 
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -67,7 +77,7 @@ func (h *handler) updateLabel(c *gin.Context) {
 		return
 	}
 
-	label, err := h.GetLabelByID(user, id)
+	label, err := h.GetLabelByID(userID, id)
 	if err != nil {
 		c.Status(http.StatusNotFound)
 		return
@@ -90,7 +100,7 @@ func (h *handler) updateLabel(c *gin.Context) {
 }
 
 func (h *handler) deleteLabel(c *gin.Context) {
-	user := c.GetInt64("user")
+	userID := c.GetInt64("user_id")
 	idStr := c.Param("id")
 
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -99,7 +109,7 @@ func (h *handler) deleteLabel(c *gin.Context) {
 		return
 	}
 
-	if err := h.DeleteLabel(user, id); err != nil {
+	if err := h.DeleteLabel(userID, id); err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	}

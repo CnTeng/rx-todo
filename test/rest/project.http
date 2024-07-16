@@ -1,0 +1,76 @@
+# @token="Bearer 7t9VSa_r3nVXlaCiRJ8y5yxiydCmruebvgVKFwhFMVg="
+@token="Bearer 4riTHuUdF-er50tTMBAMBCVVRx3u8ExnsnGOfVoQF90="
+
+# Create a new project
+POST http://localhost:8080/projects HTTP/1.1
+Authorization: {{token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "content": "test",
+  "description": "test"
+}
+
+###
+
+# Get a project
+GET http://localhost:8080/projects/22 HTTP/1.1
+Authorization: {{token}}
+Accept: application/json
+###
+
+
+# Get all projects
+GET http://localhost:8080/projects HTTP/1.1
+Authorization: {{token}}
+Accept: application/json
+
+###
+
+# Update a project
+PUT http://localhost:8080/projects/28 HTTP/1.1
+Authorization: {{token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "content": "test1",
+  "description": "tes1t"
+}
+
+###
+
+# Reorder projects
+PUT http://localhost:8080/projects/reorder HTTP/1.1
+Authorization: {{token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "parent_id": null,
+  "children": [
+    { "id": 28, "child_order": 0 },
+    { "id": 29, "child_order": 1 },
+    { "id": 30, "child_order": 2 }
+  ]
+}
+
+
+# Archive a project
+PUT http://localhost:8080/projects/23/archive HTTP/1.1
+Authorization: {{token}}
+Accept: application/json
+###
+
+# Unarchive a project
+PUT http://localhost:8080/projects/22/unarchive HTTP/1.1
+Authorization: {{token}}
+Accept: application/json
+###
+
+
+# Delete a label
+DELETE http://localhost:8080/projects/27 HTTP/1.1
+Authorization: {{token}}
+Accept: application/json

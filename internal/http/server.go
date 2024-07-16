@@ -23,6 +23,5 @@ func NewServer(db *database.DB) *Server {
 }
 
 func (s *Server) Start() error {
-
 	return s.Run(":8080")
 }

@@ -1,0 +1,40 @@
+@token="Bearer fYORx5uRpBPyObqU84DyOkHtDIheBB2fyARsOJ5Veqo="
+
+# Create a new task
+POST http://localhost:8080/tasks HTTP/1.1
+Authorization: {{token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "content": "test",
+  "description": "test",
+  "due": {
+    "date": "2024-07-20T00:00:00Z",
+    "recurring": false
+  },
+  "duration": {
+    "amount": 10,
+    "unit": "minute"
+  },
+  "priority": 1
+}
+
+###
+
+# Get all tasks
+GET http://localhost:8080/tasks HTTP/1.1
+Authorization: {{token}}
+Accept: application/json
+
+###
+
+GET http://localhost:8080/tasks/5 HTTP/1.1
+Authorization: {{token}}
+Accept: application/json
+
+###
+
+# Delete a task
+DELETE http://localhost:8080/tasks/11 HTTP/1.1
+Authorization: {{token}}

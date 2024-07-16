@@ -14,6 +14,10 @@ var migrations = []func(tx *sql.Tx) error{
 		sql := initSQL
 
 		_, err := tx.Exec(sql)
-		return fmt.Errorf("database: unable to create table: %v", err)
+		if err != nil {
+			return fmt.Errorf("database: unable to create table: %v", err)
+		}
+
+		return nil
 	},
 }
