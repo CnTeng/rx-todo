@@ -1,0 +1,54 @@
+@token="Bearer fYORx5uRpBPyObqU84DyOkHtDIheBB2fyARsOJ5Veqo="
+
+# Create a new reminder
+POST http://localhost:8080/reminders HTTP/1.1
+Authorization: {{token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "task_id": 17,
+  "due": {
+    "date": "2021-12-31T00:00:00Z",
+    "recurring": false
+  }
+}
+
+###
+
+# Get a reminder
+GET http://localhost:8080/reminders/2 HTTP/1.1
+Authorization: {{token}}
+Accept: application/json
+
+###
+
+# Get all reminders
+GET http://localhost:8080/reminders HTTP/1.1
+Authorization: {{token}}
+Accept: application/json
+
+###
+
+# Update a reminder
+PUT http://localhost:8080/reminders/2 HTTP/1.1
+Authorization: {{token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "due": {
+    "date": "2021-12-31T00:00:00Z",
+    "recurring": true 
+  }
+}
+
+###
+
+# Delete a reminder
+
+DELETE http://localhost:8080/reminders/2 HTTP/1.1
+Authorization: {{token}}
+Accept: application/json
+
+###

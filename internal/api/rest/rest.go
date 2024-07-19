@@ -18,4 +18,5 @@ func Serve(db *database.DB, r *gin.Engine) {
 	h.registerTaskRoutes()
 	h.registerUserRoutes()
 	h.registerTokenRoutes()
+	h.registerReminderRoutes()
 }

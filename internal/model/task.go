@@ -4,11 +4,6 @@ import (
 	"time"
 )
 
-type Due struct {
-	Date      *time.Time `json:"date"`
-	Recurring *bool      `json:"recurring"`
-}
-
 type Duration struct {
 	Amount *int    `json:"amount"`
 	Unit   *string `json:"unit"`

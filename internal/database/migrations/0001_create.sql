@@ -39,7 +39,7 @@ CREATE TABLE projects (
 );
 
 CREATE TYPE due AS (
-    data timestamp,
+    date timestamp,
     recurring boolean
 );
 
@@ -80,5 +80,25 @@ CREATE TABLE labels (
     PRIMARY KEY (id),
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     UNIQUE (user_id, name)
+);
+
+CREATE TABLE task_labels (
+    task_id bigint NOT NULL,
+    label_id bigint NOT NULL,
+    PRIMARY KEY (task_id, label_id),
+    FOREIGN KEY (task_id) REFERENCES tasks (id) ON DELETE CASCADE,
+    FOREIGN KEY (label_id) REFERENCES labels (id) ON DELETE CASCADE
+);
+
+CREATE TABLE reminders (
+    id bigserial,
+    user_id bigint NOT NULL,
+    task_id bigint NOT NULL,
+    due due NOT NULL,
+    created_at timestamp NOT NULL DEFAULT NOW(),
+    updated_at timestamp NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (id),
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (task_id) REFERENCES tasks (id) ON DELETE CASCADE
 );
 
