@@ -2,9 +2,9 @@
 
 # Create a new reminder
 POST http://localhost:8080/reminders HTTP/1.1
-Authorization: {{token}}
-Content-Type: application/json
-Accept: application/json
+authorization: {{token}}
+content-type: application/json
+accept: application/json
 
 {
   "task_id": 17,
@@ -18,23 +18,23 @@ Accept: application/json
 
 # Get a reminder
 GET http://localhost:8080/reminders/2 HTTP/1.1
-Authorization: {{token}}
-Accept: application/json
+authorization: {{token}}
+accept: application/json
 
 ###
 
 # Get all reminders
 GET http://localhost:8080/reminders HTTP/1.1
-Authorization: {{token}}
-Accept: application/json
+authorization: {{token}}
+accept: application/json
 
 ###
 
 # Update a reminder
 PUT http://localhost:8080/reminders/2 HTTP/1.1
-Authorization: {{token}}
-Content-Type: application/json
-Accept: application/json
+authorization: {{token}}
+content-type: application/json
+accept: application/json
 
 {
   "due": {
@@ -46,9 +46,6 @@ Accept: application/json
 ###
 
 # Delete a reminder
-
 DELETE http://localhost:8080/reminders/2 HTTP/1.1
-Authorization: {{token}}
-Accept: application/json
-
-###
+authorization: {{token}}
+accept: application/json

@@ -2,9 +2,9 @@
 
 # Create a new task
 POST http://localhost:8080/tasks HTTP/1.1
-Authorization: {{token}}
-Content-Type: application/json
-Accept: application/json
+authorization: {{token}}
+content-type: application/json
+accept: application/json
 
 {
   "content": "test",
@@ -17,6 +17,7 @@ Accept: application/json
     "amount": 10,
     "unit": "minute"
   },
+  "labels": ["test"],
   "priority": 1
 }
 
@@ -24,17 +25,17 @@ Accept: application/json
 
 # Get all tasks
 GET http://localhost:8080/tasks HTTP/1.1
-Authorization: {{token}}
-Accept: application/json
+authorization: {{token}}
+accept: application/json
 
 ###
 
-GET http://localhost:8080/tasks/5 HTTP/1.1
-Authorization: {{token}}
-Accept: application/json
+GET http://localhost:8080/tasks/17 HTTP/1.1
+authorization: {{token}}
+accept: application/json
 
 ###
 
 # Delete a task
-DELETE http://localhost:8080/tasks/11 HTTP/1.1
-Authorization: {{token}}
+DELETE http://localhost:8080/tasks/21 HTTP/1.1
+authorization: {{token}}

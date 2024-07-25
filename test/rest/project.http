@@ -1,11 +1,10 @@
-# @token="Bearer 7t9VSa_r3nVXlaCiRJ8y5yxiydCmruebvgVKFwhFMVg="
-@token="Bearer 4riTHuUdF-er50tTMBAMBCVVRx3u8ExnsnGOfVoQF90="
+@token="Bearer fYORx5uRpBPyObqU84DyOkHtDIheBB2fyARsOJ5Veqo="
 
 # Create a new project
 POST http://localhost:8080/projects HTTP/1.1
-Authorization: {{token}}
-Content-Type: application/json
-Accept: application/json
+authorization: {{token}}
+content-type: application/json
+accept: application/json
 
 {
   "content": "test",
@@ -16,23 +15,23 @@ Accept: application/json
 
 # Get a project
 GET http://localhost:8080/projects/22 HTTP/1.1
-Authorization: {{token}}
-Accept: application/json
-###
+authorization: {{token}}
+accept: application/json
 
+###
 
 # Get all projects
 GET http://localhost:8080/projects HTTP/1.1
-Authorization: {{token}}
-Accept: application/json
+authorization: {{token}}
+accept: application/json
 
 ###
 
 # Update a project
 PUT http://localhost:8080/projects/28 HTTP/1.1
-Authorization: {{token}}
-Content-Type: application/json
-Accept: application/json
+authorization: {{token}}
+content-type: application/json
+accept: application/json
 
 {
   "content": "test1",
@@ -42,10 +41,13 @@ Accept: application/json
 ###
 
 # Reorder projects
-PUT http://localhost:8080/projects/reorder HTTP/1.1
-Authorization: {{token}}
-Content-Type: application/json
-Accept: application/json
+# Archive a project
+PUT http://localhost:8080/projects/23/archive HTTP/1.1
+authorization: {{token}}
+content-type: application/json
+accept: application/json
+authorization: {{token}}
+accept: application/json
 
 {
   "parent_id": null,
@@ -56,21 +58,16 @@ Accept: application/json
   ]
 }
 
-
-# Archive a project
-PUT http://localhost:8080/projects/23/archive HTTP/1.1
-Authorization: {{token}}
-Accept: application/json
 ###
 
 # Unarchive a project
 PUT http://localhost:8080/projects/22/unarchive HTTP/1.1
-Authorization: {{token}}
-Accept: application/json
-###
+authorization: {{token}}
+accept: application/json
 
+###
 
 # Delete a label
 DELETE http://localhost:8080/projects/27 HTTP/1.1
-Authorization: {{token}}
-Accept: application/json
+authorization: {{token}}
+accept: application/json
