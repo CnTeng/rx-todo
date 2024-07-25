@@ -21,13 +21,15 @@ func (h *handler) registerLabelRoutes() {
 func (h *handler) createLabel(c *gin.Context) {
 	userID := c.GetInt64("user_id")
 
+	req := &model.CreateLabelRequest{}
 	label := &model.Label{}
-	if err := c.BindJSON(label); err != nil {
+	if err := c.BindJSON(req); err != nil {
 		c.Status(http.StatusBadRequest)
 		return
 	}
+	req.Patch(userID, label)
 
-	label, err := h.CreateLabel(userID, label)
+	label, err := h.CreateLabel(label)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
@@ -83,12 +85,12 @@ func (h *handler) updateLabel(c *gin.Context) {
 		return
 	}
 
-	r := new(model.UpdateLabelRequest)
-	if err := c.BindJSON(r); err != nil {
+	req := new(model.UpdateLabelRequest)
+	if err := c.BindJSON(req); err != nil {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-	r.Patch(label)
+	req.Patch(label)
 
 	label, err = h.UpdateLabel(label)
 	if err != nil {

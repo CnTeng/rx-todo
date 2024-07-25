@@ -90,6 +90,32 @@ CREATE TABLE task_labels (
     FOREIGN KEY (label_id) REFERENCES labels (id) ON DELETE CASCADE
 );
 
+CREATE VIEW task_with_labels AS
+SELECT
+    tasks.id,
+    tasks.user_id,
+    tasks.content,
+    tasks.description,
+    tasks.due,
+    tasks.duration,
+    tasks.priority,
+    tasks.project_id,
+    tasks.parent_id,
+    tasks.child_order,
+    tasks.done,
+    tasks.done_at,
+    tasks.archived,
+    tasks.archived_at,
+    tasks.created_at,
+    tasks.updated_at,
+    array_remove(array_agg(labels.name), NULL) AS labels
+FROM
+    tasks
+    LEFT JOIN task_labels ON tasks.id = task_labels.task_id
+    LEFT JOIN labels ON task_labels.label_id = labels.id
+GROUP BY
+    tasks.id;
+
 CREATE TABLE reminders (
     id bigserial,
     user_id bigint NOT NULL,

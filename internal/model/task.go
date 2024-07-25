@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"github.com/lib/pq"
 )
 
 type Duration struct {
@@ -10,20 +12,21 @@ type Duration struct {
 }
 
 type Task struct {
-	ID          int64      `json:"id"`
-	UserID      int64      `json:"user_id"`
-	Content     string     `json:"content"`
-	Description string     `json:"description"`
-	Due         *Due       `json:"due,omitempty"`
-	Duration    *Duration  `json:"duration,omitempty"`
-	Priority    int        `json:"priority"`
-	ProjectID   *int64     `json:"project_id,omitempty"`
-	ParentID    *int64     `json:"parent_id,omitempty"`
-	ChildOrder  int        `json:"child_order"`
-	Done        bool       `json:"done"`
-	DoneAt      *time.Time `json:"done_at,omitempty"`
-	Archived    bool       `json:"archived"`
-	ArchivedAt  *time.Time `json:"archived_at,omitempty"`
+	ID          int64          `json:"id"`
+	UserID      int64          `json:"user_id"`
+	Content     string         `json:"content"`
+	Description string         `json:"description"`
+	Due         *Due           `json:"due,omitempty"`
+	Duration    *Duration      `json:"duration,omitempty"`
+	Priority    int            `json:"priority"`
+	ProjectID   *int64         `json:"project_id,omitempty"`
+	ParentID    *int64         `json:"parent_id,omitempty"`
+	ChildOrder  int            `json:"child_order"`
+	Labels      pq.StringArray `json:"labels"`
+	Done        bool           `json:"done"`
+	DoneAt      *time.Time     `json:"done_at,omitempty"`
+	Archived    bool           `json:"archived"`
+	ArchivedAt  *time.Time     `json:"archived_at,omitempty"`
 
 	// Meta fields
 	CreatedAt time.Time `json:"created_at"`
@@ -39,6 +42,7 @@ type CreateTaskRequest struct {
 	ProjectID   *int64    `json:"project_id,omitempty"`
 	ParentID    *int64    `json:"parent_id,omitempty"`
 	ChildOrder  *int      `json:"child_order"`
+	Labels      *[]string `json:"labels"`
 }
 
 type UpdateTaskRequest struct {
@@ -50,6 +54,7 @@ type UpdateTaskRequest struct {
 	ProjectID   *int64    `json:"project_id"`
 	ParentID    *int64    `json:"parent_id"`
 	ChildOrder  *int      `json:"child_order"`
+	Labels      *[]string `json:"labels"`
 }
 
 func (r *CreateTaskRequest) Patch(task *Task, userID, inboxID int64) {
@@ -82,6 +87,10 @@ func (r *CreateTaskRequest) Patch(task *Task, userID, inboxID int64) {
 
 	if r.ChildOrder != nil {
 		task.ChildOrder = *r.ChildOrder
+	}
+
+	if r.Labels != nil {
+		task.Labels = *r.Labels
 	}
 }
 
@@ -116,5 +125,9 @@ func (r *UpdateTaskRequest) Patch(task *Task) {
 
 	if r.ChildOrder != nil {
 		task.ChildOrder = *r.ChildOrder
+	}
+
+	if r.Labels != nil {
+		task.Labels = *r.Labels
 	}
 }

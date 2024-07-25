@@ -14,9 +14,23 @@ type Label struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type CreateLabelRequest struct {
+	Name  string  `json:"name"`
+	Color *string `json:"color"`
+}
+
 type UpdateLabelRequest struct {
 	Name  *string `json:"name"`
 	Color *string `json:"color"`
+}
+
+func (r *CreateLabelRequest) Patch(userID int64, label *Label) {
+	label.UserID = userID
+	label.Name = r.Name
+
+	if r.Color != nil {
+		label.Color = *r.Color
+	}
 }
 
 func (r *UpdateLabelRequest) Patch(label *Label) {

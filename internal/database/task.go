@@ -24,15 +24,21 @@ func (db *DB) CreateTask(user int64, task *model.Task) (*model.Task, error) {
 	}
 
 	query := `
-		INSERT INTO tasks 
+		INSERT INTO tasks
 			(user_id, content, description, due, duration, priority, project_id, child_order)
-		VALUES 
+		VALUES
 			($1, $2, $3, ROW($4, $5), ROW($6, $7), $8, $9, $10)
-		RETURNING 
+		RETURNING
 			id, created_at, updated_at
 	`
 
-	err := db.QueryRow(
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("database: unable to create task: %v", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	err = tx.QueryRow(
 		query,
 		user,
 		task.Content,
@@ -47,6 +53,28 @@ func (db *DB) CreateTask(user int64, task *model.Task) (*model.Task, error) {
 	).Scan(&task.ID, &task.CreatedAt, &task.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("database: unable to create task: %v", err)
+	}
+
+	for _, labelName := range task.Labels {
+		label, err := db.GetLabelByName(user, labelName)
+		if err != nil {
+			return nil, fmt.Errorf("database: label not found: %v", label)
+		}
+
+		_, err = tx.Exec(
+			`
+				INSERT INTO task_labels
+					(task_id, label_id)
+				VALUES
+					($1, $2)
+			`, task.ID, label.ID)
+		if err != nil {
+			return nil, fmt.Errorf("database: unable to create task labels: %v", err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("database: unable to commit transaction: %v", err)
 	}
 
 	return task, nil
@@ -73,6 +101,7 @@ func (db *DB) GetTaskByID(userID, id int64) (*model.Task, error) {
 			project_id,
 			parent_id,
 			child_order,
+			labels,
 			done,
 			done_at,
 			archived,
@@ -80,7 +109,7 @@ func (db *DB) GetTaskByID(userID, id int64) (*model.Task, error) {
 			created_at,
 			updated_at
 		FROM
-			tasks
+			task_with_labels
 		WHERE
 			user_id = $1 AND id = $2
 	`
@@ -98,6 +127,7 @@ func (db *DB) GetTaskByID(userID, id int64) (*model.Task, error) {
 		&task.ProjectID,
 		&task.ParentID,
 		&task.ChildOrder,
+		&task.Labels,
 		&task.Done,
 		&task.DoneAt,
 		&task.Archived,
@@ -142,6 +172,7 @@ func (db *DB) GetTasks(user int64) ([]*model.Task, error) {
 			project_id,
 			parent_id,
 			child_order,
+			labels,
 			done,
 			done_at,
 			archived,
@@ -149,7 +180,7 @@ func (db *DB) GetTasks(user int64) ([]*model.Task, error) {
 			created_at,
 			updated_at
 		FROM
-			tasks
+			task_with_labels
 		WHERE
 			user_id = $1
 	`
@@ -176,6 +207,7 @@ func (db *DB) GetTasks(user int64) ([]*model.Task, error) {
 			&task.ProjectID,
 			&task.ParentID,
 			&task.ChildOrder,
+			&task.Labels,
 			&task.Done,
 			&task.DoneAt,
 			&task.Archived,
@@ -202,7 +234,7 @@ func (db *DB) GetTasks(user int64) ([]*model.Task, error) {
 
 func (db *DB) UpdateTask(task *model.Task) (*model.Task, error) {
 	query := `
-    UPDATE 
+    UPDATE
 			tasks
     SET
       content = $3,
@@ -214,7 +246,7 @@ func (db *DB) UpdateTask(task *model.Task) (*model.Task, error) {
 			parent_id = $9,
 			child_order = $10,
 			updated_at = now()
-    WHERE 
+    WHERE
 			id = $1 AND user_id = $2
 		RETURNING
 			updated_at
