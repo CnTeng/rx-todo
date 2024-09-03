@@ -1,120 +1,122 @@
 package rest
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/CnTeng/rx-todo/internal/model"
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 func (h *handler) registerLabelRoutes() {
-	group := h.Engine.Group("/labels")
+	group := h.Group("/labels")
 
-	group.POST("", h.createLabel)
-	group.GET(":id", h.getLabel)
-	group.GET("", h.getLabels)
-	group.PUT(":id", h.updateLabel)
-	group.DELETE(":id", h.deleteLabel)
+	group.Post("", h.createLabel)
+	group.Get(":id", h.getLabel)
+	group.Get("", h.getLabels)
+	group.Put(":id", h.updateLabel)
+	group.Delete(":id", h.deleteLabel)
 }
 
-func (h *handler) createLabel(c *gin.Context) {
-	userID := c.GetInt64("user_id")
+func (h *handler) createLabel(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	req := &model.CreateLabelRequest{}
-	label := &model.Label{}
-	if err := c.BindJSON(req); err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+	req := &model.LabelCreationRequest{}
+	if err := h.parse(c, req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
+
+	label := &model.Label{}
 	req.Patch(userID, label)
 
 	label, err := h.CreateLabel(label)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusCreated, label)
+	return c.JSON(label)
 }
 
-func (h *handler) getLabel(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	idStr := c.Param("id")
+func (h *handler) getLabel(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
 	label, err := h.GetLabelByID(userID, id)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, label)
+	return c.JSON(label)
 }
 
-func (h *handler) getLabels(c *gin.Context) {
-	userID := c.GetInt64("user_id")
+func (h *handler) getLabels(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
 	labels, err := h.GetLabels(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, labels)
+	return c.JSON(labels)
 }
 
-func (h *handler) updateLabel(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	idStr := c.Param("id")
+func (h *handler) updateLabel(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	req := new(model.LabelUpdateRequest)
+	if err := h.parse(c, req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
 	label, err := h.GetLabelByID(userID, id)
 	if err != nil {
-		c.Status(http.StatusNotFound)
-		return
-	}
-
-	req := new(model.UpdateLabelRequest)
-	if err := c.BindJSON(req); err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 	req.Patch(label)
 
 	label, err = h.UpdateLabel(label)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, label)
+	return c.JSON(label)
 }
 
-func (h *handler) deleteLabel(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	idStr := c.Param("id")
+func (h *handler) deleteLabel(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if _, err := h.GetLabelByID(userID, id); err != nil {
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
 	if err := h.DeleteLabel(userID, id); err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.Status(http.StatusOK)
+	return c.SendStatus(fiber.StatusOK)
 }

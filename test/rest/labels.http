@@ -8,7 +8,7 @@ Accept: application/json
 
 {
   "name": "Label 1",
-  "color": "#00000"
+  "color": "#000000"
 }
 
 ###
@@ -21,14 +21,14 @@ Accept: application/json
 ###
 
 # Get a label
-GET http://localhost:8080/labels/11 HTTP/1.1
+GET http://localhost:8080/labels/13 HTTP/1.1
 Authorization: Bearer {{token}}
 Accept: application/json
 
 ###
 
 # Delete a label
-DELETE http://localhost:8080/labels/3 HTTP/1.1
+DELETE http://localhost:8080/labels/26 HTTP/1.1
 Authorization: Bearer {{token}}
 Accept: application/json
 
@@ -41,5 +41,5 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "name": ""
+  "name": "test3"
 }
