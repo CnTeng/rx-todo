@@ -38,6 +38,7 @@
               go
               config.treefmt.build.wrapper
             ];
+            CGO_ENABLED = "0";
             shellHook = config.pre-commit.installationScript;
           };
 
