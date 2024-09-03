@@ -2,9 +2,9 @@
 
 # Create a new project
 POST http://localhost:8080/projects HTTP/1.1
-authorization: {{token}}
-content-type: application/json
-accept: application/json
+Authorization: {{token}}
+Content-Type: application/json
+Accept: application/json
 
 {
   "content": "test",
@@ -15,23 +15,23 @@ accept: application/json
 
 # Get a project
 GET http://localhost:8080/projects/22 HTTP/1.1
-authorization: {{token}}
-accept: application/json
+Authorization: {{token}}
+Accept: application/json
 
 ###
 
 # Get all projects
 GET http://localhost:8080/projects HTTP/1.1
-authorization: {{token}}
-accept: application/json
+Authorization: {{token}}
+Accept: application/json
 
 ###
 
 # Update a project
 PUT http://localhost:8080/projects/28 HTTP/1.1
-authorization: {{token}}
-content-type: application/json
-accept: application/json
+Authorization: {{token}}
+Content-Type: application/json
+Accept: application/json
 
 {
   "content": "test1",
@@ -43,11 +43,11 @@ accept: application/json
 # Reorder projects
 # Archive a project
 PUT http://localhost:8080/projects/23/archive HTTP/1.1
-authorization: {{token}}
-content-type: application/json
-accept: application/json
-authorization: {{token}}
-accept: application/json
+Authorization: {{token}}
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+Accept: application/json
 
 {
   "parent_id": null,
@@ -62,12 +62,12 @@ accept: application/json
 
 # Unarchive a project
 PUT http://localhost:8080/projects/22/unarchive HTTP/1.1
-authorization: {{token}}
-accept: application/json
+Authorization: {{token}}
+Accept: application/json
 
 ###
 
 # Delete a label
 DELETE http://localhost:8080/projects/27 HTTP/1.1
-authorization: {{token}}
-accept: application/json
+Authorization: {{token}}
+Accept: application/json
