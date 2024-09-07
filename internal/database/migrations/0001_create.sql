@@ -36,6 +36,7 @@ CREATE TABLE projects (
     PRIMARY KEY (id),
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (parent_id) REFERENCES projects (id) ON DELETE CASCADE,
+    UNIQUE (user_id, content)
 );
 
 CREATE TYPE due AS (

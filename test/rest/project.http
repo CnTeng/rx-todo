@@ -1,73 +1,75 @@
-@token="Bearer fYORx5uRpBPyObqU84DyOkHtDIheBB2fyARsOJ5Veqo="
+@token=fYORx5uRpBPyObqU84DyOkHtDIheBB2fyARsOJ5Veqo=
 
 # Create a new project
 POST http://localhost:8080/projects HTTP/1.1
-Authorization: {{token}}
+Authorization: Bearer {{token}}
 Content-Type: application/json
 Accept: application/json
 
 {
-  "content": "test",
-  "description": "test"
+  "content": "test2",
+  "description": "test1"
 }
 
 ###
 
 # Get a project
 GET http://localhost:8080/projects/22 HTTP/1.1
-Authorization: {{token}}
+Authorization: Bearer {{token}}
 Accept: application/json
 
 ###
 
 # Get all projects
 GET http://localhost:8080/projects HTTP/1.1
-Authorization: {{token}}
+Authorization: Bearer {{token}}
 Accept: application/json
 
 ###
 
 # Update a project
-PUT http://localhost:8080/projects/28 HTTP/1.1
-Authorization: {{token}}
+PUT http://localhost:8080/projects/43 HTTP/1.1
+Authorization: Bearer {{token}}
 Content-Type: application/json
 Accept: application/json
 
 {
-  "content": "test1",
-  "description": "tes1t"
+  "description": "test1"
 }
 
 ###
 
 # Reorder projects
-# Archive a project
-PUT http://localhost:8080/projects/23/archive HTTP/1.1
-Authorization: {{token}}
+PUT http://localhost:8080/projects/reorder HTTP/1.1
 Content-Type: application/json
-Accept: application/json
-Authorization: {{token}}
+Authorization: Bearer {{token}}
 Accept: application/json
 
 {
   "parent_id": null,
   "children": [
-    { "id": 28, "child_order": 0 },
-    { "id": 29, "child_order": 1 },
-    { "id": 30, "child_order": 2 }
+    { "id": 45, "child_order": 0 },
+    { "id": 46, "child_order": 1 }
   ]
 }
 
 ###
 
+# Archive a project
+PUT http://localhost:8080/projects/43/archive HTTP/1.1
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###
+
 # Unarchive a project
-PUT http://localhost:8080/projects/22/unarchive HTTP/1.1
-Authorization: {{token}}
+PUT http://localhost:8080/projects/43/unarchive HTTP/1.1
+Authorization: Bearer {{token}}
 Accept: application/json
 
 ###
 
 # Delete a label
-DELETE http://localhost:8080/projects/27 HTTP/1.1
-Authorization: {{token}}
+DELETE http://localhost:8080/projects/43 HTTP/1.1
+Authorization: Bearer {{token}}
 Accept: application/json
