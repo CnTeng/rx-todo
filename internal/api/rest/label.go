@@ -77,7 +77,7 @@ func (h *handler) updateLabel(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	req := new(model.LabelUpdateRequest)
+	req := &model.LabelUpdateRequest{}
 	if err := h.parse(c, req); err != nil {
 		return c.Status(fiber.StatusBadRequest).
 			JSON(fiber.Map{"error": err.Error()})
@@ -87,8 +87,9 @@ func (h *handler) updateLabel(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"error": err.Error()})
+	} else {
+		req.Patch(label)
 	}
-	req.Patch(label)
 
 	label, err = h.UpdateLabel(label)
 	if err != nil {

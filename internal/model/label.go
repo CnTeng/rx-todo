@@ -29,12 +29,6 @@ type LabelUpdateRequest struct {
 	Color *string `json:"color" validate:"omitnil,hexcolor"`
 }
 
-func (r *LabelCreationRequest) Patch(userID int64, label *Label) {
-	label.UserID = userID
-	label.Name = r.Name
-	label.Color = r.Color
-}
-
 // LabelUpdateRequest at least needs one of name or color to be set
 func (r *LabelUpdateRequest) validate() error {
 	if (r.Name == nil) && (r.Color == nil) {
@@ -42,6 +36,12 @@ func (r *LabelUpdateRequest) validate() error {
 	}
 
 	return nil
+}
+
+func (r *LabelCreationRequest) Patch(userID int64, label *Label) {
+	label.UserID = userID
+	label.Name = r.Name
+	label.Color = r.Color
 }
 
 func (r *LabelUpdateRequest) Patch(label *Label) {

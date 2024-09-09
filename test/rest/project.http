@@ -7,8 +7,8 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "content": "test2",
-  "description": "test1"
+  "content": "Inbox",
+  "description": ""
 }
 
 ###

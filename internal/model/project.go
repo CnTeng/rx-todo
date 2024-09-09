@@ -36,7 +36,7 @@ type ProjectCreationRequest struct {
 // ProjectUpdateRequest represents a request to update a project
 type ProjectUpdateRequest struct {
 	Content     *string `json:"content" validate:"omitnil,notempty"`
-	Description *string `json:"description"`
+	Description *string `json:"description" validate:"omitnil,notempty"`
 }
 
 // ProjectMoveRequest represents a request to move a project
@@ -54,6 +54,14 @@ type ProjectReorderMap struct {
 type ProjectReorderRequest struct {
 	ParentID *int64              `json:"parent_id"`
 	Children []ProjectReorderMap `json:"children"`
+}
+
+func (r *ProjectUpdateRequest) validate() error {
+	if r.Content == nil && r.Description == nil {
+		return fmt.Errorf("validate: at least one of content or description should be set")
+	}
+
+	return nil
 }
 
 func (r *ProjectCreationRequest) Patch(userID int64, project *Project) {
@@ -78,15 +86,6 @@ func (r *ProjectCreationRequest) Patch(userID int64, project *Project) {
 	if r.Favorite != nil {
 		project.Favorite = *r.Favorite
 	}
-}
-
-// ProjectUpdateRequest at least needs one of content or description to be set
-func (r *ProjectUpdateRequest) validate() error {
-	if r.Content == nil && r.Description == nil {
-		return fmt.Errorf("validate: at least one of content or description should be set")
-	}
-
-	return nil
 }
 
 func (r *ProjectUpdateRequest) Patch(project *Project) {
