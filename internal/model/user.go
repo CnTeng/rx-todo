@@ -39,12 +39,10 @@ func HashPassword(password string) (string, error) {
 	return string(bytes), err
 }
 
-func (r *CreateUserRequest) Patch(user *User, hashedPassword string) {
+func (r *CreateUserRequest) Patch(user *User) {
 	if r.Username != nil {
 		user.Username = *r.Username
 	}
-
-	user.Password = hashedPassword
 
 	if r.Email != nil {
 		user.Email = *r.Email
@@ -55,12 +53,14 @@ func (r *CreateUserRequest) Patch(user *User, hashedPassword string) {
 	}
 }
 
-func (r *UpdateUserRequest) Patch(user *User, hashedPassword string) {
+func (r *UpdateUserRequest) Patch(user *User) {
 	if r.Username != nil {
 		user.Username = *r.Username
 	}
 
-	user.Password = hashedPassword
+	if r.NewPassword != nil {
+		user.Password = *r.NewPassword
+	}
 
 	if r.Email != nil {
 		user.Email = *r.Email

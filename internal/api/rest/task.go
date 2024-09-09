@@ -32,8 +32,8 @@ func (h *handler) createTask(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	task := &model.Task{}
-	req.Patch(task, userID, inboxID)
+	task := &model.Task{UserID: userID, ProjectID: &inboxID}
+	req.Patch(task)
 
 	task, err = h.CreateTask(task)
 	if err != nil {

@@ -64,9 +64,7 @@ func (r *ProjectUpdateRequest) validate() error {
 	return nil
 }
 
-func (r *ProjectCreationRequest) Patch(userID int64, project *Project) {
-	project.UserID = userID
-
+func (r *ProjectCreationRequest) Patch(project *Project) {
 	if r.Content != nil {
 		project.Content = *r.Content
 	}

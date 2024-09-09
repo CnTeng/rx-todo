@@ -29,8 +29,8 @@ func (h *handler) createProject(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	project := &model.Project{}
-	req.Patch(userID, project)
+	project := &model.Project{UserID: userID}
+	req.Patch(project)
 
 	project, err := h.CreateProject(project)
 	if err != nil {
@@ -90,8 +90,9 @@ func (h *handler) updateProject(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"error": err.Error()})
+	} else {
+		req.Patch(project)
 	}
-	req.Patch(project)
 
 	project, err = h.UpdateProject(project)
 	if err != nil {
@@ -117,8 +118,9 @@ func (h *handler) reorderProject(c *fiber.Ctx) error {
 		if err != nil {
 			return c.Status(fiber.StatusNotFound).
 				JSON(fiber.Map{"error": err.Error()})
+		} else {
+			child.Patch(project)
 		}
-		child.Patch(project)
 
 		projects = append(projects, project)
 	}

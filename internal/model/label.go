@@ -38,8 +38,7 @@ func (r *LabelUpdateRequest) validate() error {
 	return nil
 }
 
-func (r *LabelCreationRequest) Patch(userID int64, label *Label) {
-	label.UserID = userID
+func (r *LabelCreationRequest) Patch(label *Label) {
 	label.Name = r.Name
 	label.Color = r.Color
 }

@@ -27,8 +27,8 @@ func (h *handler) createUser(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	user := &model.User{}
-	req.Patch(user, hashedPassword)
+	user := &model.User{Password: hashedPassword}
+	req.Patch(user)
 
 	user, err = h.CreateUser(user)
 	if err != nil {
@@ -71,12 +71,12 @@ func (h *handler) updateUser(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	newPassword, err := model.HashPassword(*req.NewPassword)
+	*req.NewPassword, err = model.HashPassword(*req.NewPassword)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})
 	} else {
-		req.Patch(user, newPassword)
+		req.Patch(user)
 	}
 
 	user, err = h.UpdateUser(user)

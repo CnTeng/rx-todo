@@ -70,9 +70,7 @@ func (r *TaskUpdateRequest) Validate() error {
 	return nil
 }
 
-func (r *TaskCreationRequest) Patch(task *Task, userID, inboxID int64) {
-	task.UserID = userID
-
+func (r *TaskCreationRequest) Patch(task *Task) {
 	if r.Content != nil {
 		task.Content = *r.Content
 	}
@@ -96,9 +94,8 @@ func (r *TaskCreationRequest) Patch(task *Task, userID, inboxID int64) {
 	if r.ProjectID != nil {
 		task.ProjectID = r.ProjectID
 	} else if r.ParentID != nil {
+		task.ProjectID = nil
 		task.ParentID = r.ParentID
-	} else {
-		task.ProjectID = &inboxID
 	}
 
 	if r.ChildOrder != nil {

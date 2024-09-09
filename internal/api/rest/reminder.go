@@ -26,8 +26,8 @@ func (h *handler) createReminder(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	reminder := &model.Reminder{}
-	req.Patch(userID, reminder)
+	reminder := &model.Reminder{UserID: userID}
+	req.Patch(reminder)
 
 	reminder, err := h.CreateReminder(reminder)
 	if err != nil {
@@ -87,8 +87,9 @@ func (h *handler) updateReminder(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"error": err.Error()})
+	} else {
+		req.Patch(reminder)
 	}
-	req.Patch(reminder)
 
 	reminder, err = h.UpdateReminder(reminder)
 	if err != nil {

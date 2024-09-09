@@ -25,8 +25,7 @@ type ReminderUpdateRequest struct {
 	Due Due `json:"due"`
 }
 
-func (r *ReminderCreationRequest) Patch(userID int64, reminder *Reminder) {
-	reminder.UserID = userID
+func (r *ReminderCreationRequest) Patch(reminder *Reminder) {
 	reminder.TaskID = r.TaskID
 	reminder.Due = r.Due
 }

@@ -26,8 +26,8 @@ func (h *handler) createLabel(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	label := &model.Label{}
-	req.Patch(userID, label)
+	label := &model.Label{UserID: userID}
+	req.Patch(label)
 
 	label, err := h.CreateLabel(label)
 	if err != nil {
