@@ -1,127 +1,129 @@
 package rest
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/CnTeng/rx-todo/internal/model"
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 func (h *handler) registerTaskRoutes() {
-	group := h.Engine.Group("/tasks")
+	group := h.Group("/tasks")
 
-	group.POST("", h.createTask)
-	group.GET(":id", h.getTask)
-	group.GET("", h.getTasks)
-	group.PUT(":id", h.updateTask)
-	group.DELETE(":id", h.deleteTask)
+	group.Post("", h.createTask)
+	group.Get(":id", h.getTask)
+	group.Get("", h.getTasks)
+	group.Put(":id", h.updateTask)
+	group.Delete(":id", h.deleteTask)
 }
 
-func (h *handler) createTask(c *gin.Context) {
-	userID := c.GetInt64("user_id")
+func (h *handler) createTask(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	r := &model.CreateTaskRequest{}
-	task := &model.Task{}
-	if err := c.BindJSON(r); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
+	req := &model.TaskCreationRequest{}
+	if err := h.parse(c, req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
 	inboxID, err := h.GetUserInboxID(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
-	r.Patch(task, userID, inboxID)
 
-	task, err = h.CreateTask(userID, task)
+	task := &model.Task{UserID: userID, ProjectID: &inboxID}
+	req.Patch(task)
+
+	task, err = h.CreateTask(task)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusCreated, task)
+	return c.JSON(task)
 }
 
-func (h *handler) getTask(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	idStr := c.Param("id")
+func (h *handler) getTask(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
 	task, err := h.GetTaskByID(userID, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, task)
+	return c.JSON(task)
 }
 
-func (h *handler) getTasks(c *gin.Context) {
-	userID := c.GetInt64("user_id")
+func (h *handler) getTasks(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
 	tasks, err := h.GetTasks(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, tasks)
+	return c.JSON(tasks)
 }
 
-func (h *handler) updateTask(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	idStr := c.Param("id")
+func (h *handler) updateTask(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	req := &model.TaskUpdateRequest{}
+	if err := h.parse(c, req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
 	task, err := h.GetTaskByID(userID, id)
 	if err != nil {
-		c.Status(http.StatusNotFound)
-		return
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
+	} else {
+		req.Patch(task)
 	}
-
-	r := &model.UpdateTaskRequest{}
-	if err := c.BindJSON(r); err != nil {
-		c.Status(http.StatusBadRequest)
-		return
-	}
-	r.Patch(task)
 
 	task, err = h.UpdateTask(task)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, task)
+	return c.JSON(task)
 }
 
-func (h *handler) deleteTask(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	idStr := c.Param("id")
+func (h *handler) deleteTask(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	err = h.DeleteTask(userID, id)
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
+	if _, err := h.GetTaskByID(userID, id); err != nil {
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.Status(http.StatusNoContent)
+	if err := h.DeleteTask(userID, id); err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.SendStatus(fiber.StatusOK)
 }

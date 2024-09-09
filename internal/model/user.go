@@ -58,6 +58,10 @@ func (r *UpdateUserRequest) Patch(user *User) {
 		user.Username = *r.Username
 	}
 
+	if r.NewPassword != nil {
+		user.Password = *r.NewPassword
+	}
+
 	if r.Email != nil {
 		user.Email = *r.Email
 	}

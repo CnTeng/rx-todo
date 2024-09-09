@@ -2,6 +2,7 @@ package model
 
 import "time"
 
+// Reminder represents a reminder
 type Reminder struct {
 	ID     int64 `json:"id"`
 	UserID int64 `json:"user_id"`
@@ -13,22 +14,22 @@ type Reminder struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type CreateReminderRequest struct {
-	UserID int64 `json:"user_id"`
+// ReminderCreationRequest represents a request to create a reminder
+type ReminderCreationRequest struct {
 	TaskID int64 `json:"task_id"`
 	Due    Due   `json:"due"`
 }
 
-type UpdateReminderRequest struct {
+// ReminderUpdateRequest represents a request to update a reminder
+type ReminderUpdateRequest struct {
 	Due Due `json:"due"`
 }
 
-func (r *CreateReminderRequest) Patch(userID int64, reminder *Reminder) {
-	reminder.UserID = userID
+func (r *ReminderCreationRequest) Patch(reminder *Reminder) {
 	reminder.TaskID = r.TaskID
 	reminder.Due = r.Due
 }
 
-func (r *UpdateReminderRequest) Patch(userID int64, reminder *Reminder) {
+func (r *ReminderUpdateRequest) Patch(reminder *Reminder) {
 	reminder.Due = r.Due
 }

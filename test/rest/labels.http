@@ -1,13 +1,13 @@
-@token="Bearer fYORx5uRpBPyObqU84DyOkHtDIheBB2fyARsOJ5Veqo="
+@token=fYORx5uRpBPyObqU84DyOkHtDIheBB2fyARsOJ5Veqo=
 
 # Create a new label
 POST http://localhost:8080/labels HTTP/1.1
-authorization: {{token}}
-content-type: application/json
-accept: application/json
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: application/json
 
 {
-  "name": "test",
+  "name": "Label 1",
   "color": "#000000"
 }
 
@@ -15,30 +15,31 @@ accept: application/json
 
 # Get all labels
 GET http://localhost:8080/labels HTTP/1.1
-authorization: {{token}}
-accept: application/json
+Authorization: Bearer {{token}}
+Accept: application/json
 
 ###
 
 # Get a label
-GET http://localhost:8080/labels/11 HTTP/1.1
-authorization: {{token}}
-accept: application/json
+GET http://localhost:8080/labels/13 HTTP/1.1
+Authorization: Bearer {{token}}
+Accept: application/json
 
 ###
 
 # Delete a label
-DELETE http://localhost:8080/labels/3 HTTP/1.1
-authorization: {{token}}
-accept: application/json
+DELETE http://localhost:8080/labels/26 HTTP/1.1
+Authorization: Bearer {{token}}
+Accept: application/json
 
 ###
 
 # Update a label
-PUT http://localhost:8080/labels/3 HTTP/1.1
-authorization: {{token}}
-accept: application/json
+PUT http://localhost:8080/labels/7 HTTP/1.1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: application/json
 
 {
-  "name": "test7"
+  "name": "test3"
 }

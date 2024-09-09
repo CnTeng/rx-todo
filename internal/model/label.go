@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // Label represents a label
 type Label struct {
@@ -14,29 +17,37 @@ type Label struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type CreateLabelRequest struct {
-	Name  string  `json:"name"`
-	Color *string `json:"color"`
+// LabelCreationRequest represents a request to create a label
+type LabelCreationRequest struct {
+	Name  string `json:"name" validate:"required"`
+	Color string `json:"color" validate:"required,hexcolor"`
 }
 
-type UpdateLabelRequest struct {
-	Name  *string `json:"name"`
-	Color *string `json:"color"`
+// LabelUpdateRequest represents a request to update a label
+type LabelUpdateRequest struct {
+	Name  *string `json:"name" validate:"omitnil,notempty"`
+	Color *string `json:"color" validate:"omitnil,hexcolor"`
 }
 
-func (r *CreateLabelRequest) Patch(userID int64, label *Label) {
-	label.UserID = userID
-	label.Name = r.Name
-
-	if r.Color != nil {
-		label.Color = *r.Color
+// LabelUpdateRequest at least needs one of name or color to be set
+func (r *LabelUpdateRequest) validate() error {
+	if (r.Name == nil) && (r.Color == nil) {
+		return fmt.Errorf("validate: at least one of name or color should be set")
 	}
+
+	return nil
 }
 
-func (r *UpdateLabelRequest) Patch(label *Label) {
+func (r *LabelCreationRequest) Patch(label *Label) {
+	label.Name = r.Name
+	label.Color = r.Color
+}
+
+func (r *LabelUpdateRequest) Patch(label *Label) {
 	if r.Name != nil {
 		label.Name = *r.Name
 	}
+
 	if r.Color != nil {
 		label.Color = *r.Color
 	}

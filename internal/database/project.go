@@ -251,6 +251,11 @@ func (db *DB) UpdateProjects(projects []*model.Project) error {
 }
 
 func (db *DB) DeleteProject(userID, id int64) error {
+	inboxID, err := db.GetUserInboxID(userID)
+	if err == nil && inboxID == id {
+		return fmt.Errorf("unable to delete inbox project")
+	}
+
 	query := `DELETE FROM projects WHERE id = $1 AND user_id = $2`
 	return db.execSimpleQuery(query, id, userID)
 }

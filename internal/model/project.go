@@ -1,7 +1,11 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
+// Project represents a project
 type Project struct {
 	ID          int64      `json:"id"`
 	UserID      int64      `json:"user_id"`
@@ -20,36 +24,47 @@ type Project struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type CreateProjectRequest struct {
-	Content     *string `json:"content"`
+// ProjectCreationRequest represents a request to create a project
+type ProjectCreationRequest struct {
+	Content     *string `json:"content" validate:"required,notempty"`
 	Description *string `json:"description"`
 	ParentID    *int64  `json:"parent_id"`
 	ChildOrder  *int64  `json:"child_order"`
 	Favorite    *bool   `json:"favorite"`
 }
 
-type UpdateProjectRequest struct {
-	ID          *int64  `json:"id"`
-	Content     *string `json:"content"`
-	Description *string `json:"description"`
+// ProjectUpdateRequest represents a request to update a project
+type ProjectUpdateRequest struct {
+	Content     *string `json:"content" validate:"omitnil,notempty"`
+	Description *string `json:"description" validate:"omitnil,notempty"`
 }
 
-type MoveProjectRequest struct {
-	ID       int64  `json:"id"`
-	ParentID *int64 `json:"parent_id"`
+// ProjectMoveRequest represents a request to move a project
+type ProjectMoveRequest struct {
+	ParentID int64 `json:"parent_id" validate:"required"`
 }
 
-type ReorderProjectMap struct {
+// ProjectReorderMap represents a map of project id to child order
+type ProjectReorderMap struct {
 	ID         int64 `json:"id"`
 	ChildOrder int64 `json:"child_order"`
 }
 
-type ReorderProjectRequest struct {
+// ProjectReorderRequest represents a request to reorder projects
+type ProjectReorderRequest struct {
 	ParentID *int64              `json:"parent_id"`
-	Children []ReorderProjectMap `json:"children"`
+	Children []ProjectReorderMap `json:"children"`
 }
 
-func (r *CreateProjectRequest) Patch(project *Project) {
+func (r *ProjectUpdateRequest) validate() error {
+	if r.Content == nil && r.Description == nil {
+		return fmt.Errorf("validate: at least one of content or description should be set")
+	}
+
+	return nil
+}
+
+func (r *ProjectCreationRequest) Patch(project *Project) {
 	if r.Content != nil {
 		project.Content = *r.Content
 	}
@@ -71,7 +86,7 @@ func (r *CreateProjectRequest) Patch(project *Project) {
 	}
 }
 
-func (r *UpdateProjectRequest) Patch(project *Project) {
+func (r *ProjectUpdateRequest) Patch(project *Project) {
 	if r.Content != nil {
 		project.Content = *r.Content
 	}
@@ -81,6 +96,6 @@ func (r *UpdateProjectRequest) Patch(project *Project) {
 	}
 }
 
-func (m *ReorderProjectMap) Patch(project *Project) {
+func (m *ProjectReorderMap) Patch(project *Project) {
 	project.ChildOrder = m.ChildOrder
 }

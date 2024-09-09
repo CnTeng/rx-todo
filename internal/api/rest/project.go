@@ -1,210 +1,200 @@
 package rest
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/CnTeng/rx-todo/internal/model"
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 func (h *handler) registerProjectRoutes() {
-	group := h.Engine.Group("/projects")
+	group := h.Group("/projects")
 
-	group.POST("", h.createProject)
-	group.GET(":id", h.getProject)
-	group.GET("", h.getProjects)
-	group.PUT(":id", h.updateProject)
-	group.PUT("reorder", h.reorderProject)
-	group.PUT(":id/archive", h.archiveProject)
-	group.PUT(":id/unarchive", h.unarchiveProject)
-	group.DELETE(":id", h.deleteProject)
+	group.Post("", h.createProject)
+	group.Get(":id", h.getProject)
+	group.Get("", h.getProjects)
+	group.Put("reorder", h.reorderProject)
+	group.Put(":id", h.updateProject)
+	group.Put(":id/archive", h.archiveProject)
+	group.Put(":id/unarchive", h.unarchiveProject)
+	group.Delete(":id", h.deleteProject)
 }
 
-func (h *handler) createProject(c *gin.Context) {
-	userID := c.GetInt64("user_id")
+func (h *handler) createProject(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	r := &model.CreateProjectRequest{}
-	project := &model.Project{}
-	if err := c.BindJSON(r); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
+	req := &model.ProjectCreationRequest{}
+	if err := h.parse(c, req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
-	r.Patch(project)
-	project.UserID = userID
+
+	project := &model.Project{UserID: userID}
+	req.Patch(project)
 
 	project, err := h.CreateProject(project)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusCreated, project)
+	return c.JSON(project)
 }
 
-func (h *handler) getProjects(c *gin.Context) {
-	userID := c.GetInt64("user_id")
+func (h *handler) getProject(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
+
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	project, err := h.GetProjectByID(userID, id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(project)
+}
+
+func (h *handler) getProjects(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
 	projects, err := h.GetProjects(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, projects)
+	return c.JSON(projects)
 }
 
-func (h *handler) getProject(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	idStr := c.Param("id")
+func (h *handler) updateProject(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	req := &model.ProjectUpdateRequest{}
+	if err := h.parse(c, req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
 	project, err := h.GetProjectByID(userID, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
+	} else {
+		req.Patch(project)
 	}
-
-	c.JSON(http.StatusOK, project)
-}
-
-func (h *handler) updateProject(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	idStr := c.Param("id")
-
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
-	}
-
-	project, err := h.GetProjectByID(userID, id)
-	if err != nil {
-		c.JSON(http.StatusNotFound, err.Error())
-		return
-	}
-
-	r := &model.UpdateProjectRequest{}
-	if err := c.BindJSON(r); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	r.Patch(project)
 
 	project, err = h.UpdateProject(project)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, project)
+	return c.JSON(project)
 }
 
-func (h *handler) reorderProject(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	projects := []*model.Project{}
+func (h *handler) reorderProject(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	r := &model.ReorderProjectRequest{}
-	if err := c.BindJSON(r); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
+	req := &model.ProjectReorderRequest{}
+	if err := h.parse(c, req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": "error"})
 	}
 
-	for _, child := range r.Children {
+	projects := []*model.Project{}
+	for _, child := range req.Children {
 		project, err := h.GetProjectByID(userID, child.ID)
-		if err != nil || project.UserID != userID {
-			c.JSON(http.StatusNotFound, err.Error())
-			return
+		if err != nil {
+			return c.Status(fiber.StatusNotFound).
+				JSON(fiber.Map{"error": err.Error()})
+		} else {
+			child.Patch(project)
 		}
-		child.Patch(project)
 
 		projects = append(projects, project)
 	}
 
 	if err := h.UpdateProjects(projects); err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.Status(http.StatusOK)
+	return c.SendStatus(fiber.StatusOK)
 }
 
-func (h *handler) archiveProject(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	idStr := c.Param("id")
+func (h *handler) archiveProject(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	_, err = h.GetProjectByID(userID, id)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		return
+	if _, err := h.GetProjectByID(userID, id); err != nil {
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	err = h.ArchiveProject(userID, id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+	if err := h.ArchiveProject(userID, id); err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.Status(http.StatusOK)
+	return c.SendStatus(fiber.StatusOK)
 }
 
-func (h *handler) unarchiveProject(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	idStr := c.Param("id")
+func (h *handler) unarchiveProject(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	_, err = h.GetProjectByID(userID, id)
-	if err != nil {
-		c.JSON(http.StatusNotFound, err.Error())
-		return
+	if _, err := h.GetProjectByID(userID, id); err != nil {
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	err = h.UnarchiveProject(userID, id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+	if err := h.UnarchiveProject(userID, id); err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.Status(http.StatusOK)
+	return c.SendStatus(fiber.StatusOK)
 }
 
-func (h *handler) deleteProject(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	idStr := c.Param("id")
+func (h *handler) deleteProject(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	_, err = h.GetProjectByID(userID, id)
-	if err != nil {
-		c.JSON(http.StatusNotFound, err.Error())
-		return
+	if _, err := h.GetProjectByID(userID, id); err != nil {
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	err = h.DeleteProject(userID, id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+	if err := h.DeleteProject(userID, id); err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.Status(http.StatusOK)
+	return c.SendStatus(fiber.StatusOK)
 }

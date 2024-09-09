@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/lib/pq"
@@ -33,8 +34,8 @@ type Task struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type CreateTaskRequest struct {
-	Content     string    `json:"content"`
+type TaskCreationRequest struct {
+	Content     *string   `json:"content" validate:"required,notempty"`
 	Description *string   `json:"description"`
 	Due         *Due      `json:"due,omitempty"`
 	Duration    *Duration `json:"duration,omitempty"`
@@ -45,7 +46,7 @@ type CreateTaskRequest struct {
 	Labels      *[]string `json:"labels"`
 }
 
-type UpdateTaskRequest struct {
+type TaskUpdateRequest struct {
 	Content     *string   `json:"content"`
 	Description *string   `json:"description"`
 	Due         *Due      `json:"due"`
@@ -57,9 +58,22 @@ type UpdateTaskRequest struct {
 	Labels      *[]string `json:"labels"`
 }
 
-func (r *CreateTaskRequest) Patch(task *Task, userID, inboxID int64) {
-	task.UserID = userID
-	task.Content = r.Content
+func (r *TaskUpdateRequest) Validate() error {
+	if r.Content == nil && r.Description == nil &&
+		r.Due == nil && r.Duration == nil &&
+		r.Priority == nil && r.ProjectID == nil &&
+		r.ParentID == nil && r.ChildOrder == nil &&
+		r.Labels == nil {
+		return fmt.Errorf("validate: at least one of task attributes should be set")
+	}
+
+	return nil
+}
+
+func (r *TaskCreationRequest) Patch(task *Task) {
+	if r.Content != nil {
+		task.Content = *r.Content
+	}
 
 	if r.Description != nil {
 		task.Description = *r.Description
@@ -80,9 +94,8 @@ func (r *CreateTaskRequest) Patch(task *Task, userID, inboxID int64) {
 	if r.ProjectID != nil {
 		task.ProjectID = r.ProjectID
 	} else if r.ParentID != nil {
+		task.ProjectID = nil
 		task.ParentID = r.ParentID
-	} else {
-		task.ProjectID = &inboxID
 	}
 
 	if r.ChildOrder != nil {
@@ -94,7 +107,7 @@ func (r *CreateTaskRequest) Patch(task *Task, userID, inboxID int64) {
 	}
 }
 
-func (r *UpdateTaskRequest) Patch(task *Task) {
+func (r *TaskUpdateRequest) Patch(task *Task) {
 	if r.Content != nil {
 		task.Content = *r.Content
 	}

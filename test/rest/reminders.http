@@ -1,10 +1,10 @@
-@token="Bearer fYORx5uRpBPyObqU84DyOkHtDIheBB2fyARsOJ5Veqo="
+@token=fYORx5uRpBPyObqU84DyOkHtDIheBB2fyARsOJ5Veqo=
 
 # Create a new reminder
 POST http://localhost:8080/reminders HTTP/1.1
-authorization: {{token}}
-content-type: application/json
-accept: application/json
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: application/json
 
 {
   "task_id": 17,
@@ -18,23 +18,23 @@ accept: application/json
 
 # Get a reminder
 GET http://localhost:8080/reminders/2 HTTP/1.1
-authorization: {{token}}
-accept: application/json
+Authorization: Bearer {{token}}
+Accept: application/json
 
 ###
 
 # Get all reminders
 GET http://localhost:8080/reminders HTTP/1.1
-authorization: {{token}}
-accept: application/json
+Authorization: Bearer {{token}}
+Accept: application/json
 
 ###
 
 # Update a reminder
 PUT http://localhost:8080/reminders/2 HTTP/1.1
-authorization: {{token}}
-content-type: application/json
-accept: application/json
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: application/json
 
 {
   "due": {
@@ -47,5 +47,5 @@ accept: application/json
 
 # Delete a reminder
 DELETE http://localhost:8080/reminders/2 HTTP/1.1
-authorization: {{token}}
-accept: application/json
+Authorization: Bearer {{token}}
+Accept: application/json

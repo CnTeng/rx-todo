@@ -4,24 +4,32 @@ import (
 	"github.com/CnTeng/rx-todo/internal/api/rest"
 	"github.com/CnTeng/rx-todo/internal/database"
 	"github.com/CnTeng/rx-todo/internal/http/middleware"
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 )
 
 type Server struct {
-	*gin.Engine
+	*fiber.App
 	*database.DB
 }
 
 func NewServer(db *database.DB) *Server {
-	r := gin.New()
-	r.Use(gin.Logger(), gin.Recovery())
-	r.Use(middleware.AuthMiddleware(db))
+	app := fiber.New(fiber.Config{
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			return c.Status(fiber.StatusBadRequest).
+				JSON(fiber.Map{"error": err.Error()})
+		},
+	})
 
-	rest.Serve(db, r)
+	app.Use(logger.New(), recover.New())
+	app.Use(middleware.AuthMiddleware(db))
 
-	return &Server{r, db}
+	rest.Serve(db, app)
+
+	return &Server{app, db}
 }
 
 func (s *Server) Start() error {
-	return s.Run(":8080")
+	return s.Listen(":8080")
 }

@@ -1,108 +1,117 @@
 package rest
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/CnTeng/rx-todo/internal/model"
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 func (h *handler) registerTokenRoutes() {
-	group := h.Engine.Group("/tokens")
+	group := h.Group("/tokens")
 
-	h.Engine.POST("/token", h.createToken)
-	group.GET("", h.getTokens)
-	group.PUT(":id", h.updateToken)
-	group.DELETE(":id", h.deleteToken)
+	h.Post("/token", h.createToken)
+	group.Get("", h.getTokens)
+	group.Put(":id", h.updateToken)
+	group.Delete(":id", h.deleteToken)
 }
 
-func (h *handler) createToken(c *gin.Context) {
-	r := &model.CreateTokenRequest{}
-	token := &model.Token{}
-	if err := c.BindJSON(r); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
+func (h *handler) createToken(c *fiber.Ctx) error {
+	req := &model.CreateTokenRequest{}
+	if err := h.parse(c, req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
-	r.Patch(token)
 
-	if err := h.VerifyUser(token.UserID, r.Password); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
+	if err := h.VerifyUser(req.UserID, req.Password); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
+
+	token := &model.Token{}
+	req.Patch(token)
 
 	token, err := h.CreateToken(token)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusCreated, token)
+	return c.JSON(token)
 }
 
-func (h *handler) getTokens(c *gin.Context) {
-	userID := c.GetInt64("user_id")
+func (h *handler) getTokens(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
 	tokens, err := h.GetTokens(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, tokens)
+	return c.JSON(tokens)
 }
 
-func (h *handler) updateToken(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	idStr := c.Param("id")
+func (h *handler) updateToken(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	req := &model.UpdateTokenRequest{}
+	if err := h.parse(c, req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if req.UserID != id {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": "user_id in request body must match id in URL"})
+	}
+
+	if err := h.VerifyUser(req.UserID, req.Password); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
 	token, err := h.GetTokenByID(userID, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	r := &model.UpdateTokenRequest{}
-	if err := c.BindJSON(r); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	r.Patch(token)
-
-	if err := h.VerifyUser(userID, r.Password); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
+	} else {
+		req.Patch(token)
 	}
 
 	token, err = h.UpdateToken(token)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, token)
+	return c.JSON(token)
 }
 
-func (h *handler) deleteToken(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	idStr := c.Param("id")
+func (h *handler) deleteToken(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if _, err := h.GetTokenByID(userID, id); err != nil {
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
 	if err := h.DeleteToken(userID, id); err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.Status(http.StatusNoContent)
+	return c.SendStatus(fiber.StatusOK)
 }

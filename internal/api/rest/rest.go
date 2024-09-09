@@ -2,16 +2,29 @@ package rest
 
 import (
 	"github.com/CnTeng/rx-todo/internal/database"
-	"github.com/gin-gonic/gin"
+	"github.com/CnTeng/rx-todo/internal/model"
+	"github.com/gofiber/fiber/v2"
 )
 
 type handler struct {
 	*database.DB
-	Engine *gin.Engine
+	*fiber.App
 }
 
-func Serve(db *database.DB, r *gin.Engine) {
-	h := handler{DB: db, Engine: r}
+func (*handler) parse(c *fiber.Ctx, req any) error {
+	if err := c.BodyParser(req); err != nil {
+		return err
+	}
+
+	if err := model.Validate(req); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func Serve(db *database.DB, app *fiber.App) {
+	h := handler{DB: db, App: app}
 
 	h.registerProjectRoutes()
 	h.registerLabelRoutes()
