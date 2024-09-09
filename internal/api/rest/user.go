@@ -1,102 +1,105 @@
 package rest
 
 import (
-	"net/http"
-
 	"github.com/CnTeng/rx-todo/internal/model"
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 func (h *handler) registerUserRoutes() {
-	group := h.Engine.Group("/users")
+	group := h.Group("/users")
 
-	h.Engine.POST("/registry", h.createUser)
-	group.GET(":id", h.getUser)
-	group.PUT(":id", h.updateUser)
-	group.DELETE(":id", h.deleteUser)
+	h.Post("/registry", h.createUser)
+	group.Get(":id", h.getUser)
+	group.Put(":id", h.updateUser)
+	group.Delete(":id", h.deleteUser)
 }
 
-func (h *handler) createUser(c *gin.Context) {
-	r := &model.CreateUserRequest{}
-	user := &model.User{}
-	if err := c.BindJSON(r); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
+func (h *handler) createUser(c *fiber.Ctx) error {
+	req := &model.CreateUserRequest{}
+	if err := h.parse(c, req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
-	r.Patch(user)
 
-	var err error
-	user.Password, err = model.HashPassword(*r.Password)
+	hashedPassword, err := model.HashPassword(*req.Password)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
+
+	user := &model.User{}
+	req.Patch(user, hashedPassword)
 
 	user, err = h.CreateUser(user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusCreated, user)
+	return c.JSON(user)
 }
 
-func (h *handler) getUser(c *gin.Context) {
-	id := c.GetInt64("user_id")
+func (h *handler) getUser(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	user, err := h.GetUserByID(id)
+	user, err := h.GetUserByID(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"err": err.Error()})
-		return
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, user)
+	return c.JSON(user)
 }
 
-func (h *handler) updateUser(c *gin.Context) {
-	id := c.GetInt64("user_id")
+func (h *handler) updateUser(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	user, err := h.GetUserByID(id)
+	req := &model.UpdateUserRequest{}
+	if err := h.parse(c, req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if err := h.VerifyUser(userID, *req.OldPassword); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	user, err := h.GetUserByID(userID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, err.Error())
-		return
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	r := &model.UpdateUserRequest{}
-	if err := c.BindJSON(r); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	newPassword, err := model.HashPassword(*r.NewPassword)
+	newPassword, err := model.HashPassword(*req.NewPassword)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
+	} else {
+		req.Patch(user, newPassword)
 	}
-
-	if err := h.VerifyUser(id, *r.OldPassword); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	r.Patch(user)
-	user.Password = newPassword
 
 	user, err = h.UpdateUser(user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, user)
+	return c.JSON(user)
 }
 
-func (h *handler) deleteUser(c *gin.Context) {
-	id := c.GetInt64("user_id")
+func (h *handler) deleteUser(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	if err := h.DeleteUser(id); err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+	if _, err := h.GetUserByID(userID); err != nil {
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.Status(http.StatusOK)
+	if err := h.DeleteUser(userID); err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.SendStatus(fiber.StatusOK)
 }

@@ -6,7 +6,7 @@ Accept: application/json
 Content-Type: application/json
 
 {
-  "user_id": 26,
+  "user_id": 29,
   "password": "test123456"
 }
 
@@ -20,7 +20,7 @@ Authorization: Bearer {{token}}
 ###
 
 # Update a tokens
-PUT http://localhost:8080/tokens/10 HTTP/1.1
+PUT http://localhost:8080/tokens/29 HTTP/1.1
 Authorization: {{token}}
 Accept: application/json
 
