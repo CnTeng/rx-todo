@@ -1,121 +1,122 @@
 package rest
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/CnTeng/rx-todo/internal/model"
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 func (h *handler) registerReminderRoutes() {
-	group := h.Engine.Group("/reminders")
+	group := h.Group("/reminders")
 
-	group.POST("", h.createReminder)
-	group.GET(":id", h.getReminder)
-	group.GET("", h.getReminders)
-	group.PUT(":id", h.updateReminder)
-	group.DELETE(":id", h.deleteReminder)
+	group.Post("", h.createReminder)
+	group.Get(":id", h.getReminder)
+	group.Get("", h.getReminders)
+	group.Put(":id", h.updateReminder)
+	group.Delete(":id", h.deleteReminder)
 }
 
-func (h *handler) createReminder(c *gin.Context) {
-	userID := c.GetInt64("user_id")
+func (h *handler) createReminder(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	r := &model.CreateReminderRequest{}
-	reminder := &model.Reminder{}
-	if err := c.BindJSON(r); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
+	req := &model.ReminderCreationRequest{}
+	if err := h.parse(c, req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
-	r.Patch(userID, reminder)
+
+	reminder := &model.Reminder{}
+	req.Patch(userID, reminder)
 
 	reminder, err := h.CreateReminder(reminder)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusCreated, reminder)
+	return c.JSON(reminder)
 }
 
-func (h *handler) getReminders(c *gin.Context) {
-	userID := c.GetInt64("user_id")
+func (h *handler) getReminder(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
+
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	reminder, err := h.GetReminderByID(userID, id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(reminder)
+}
+
+func (h *handler) getReminders(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
 	reminders, err := h.GetReminders(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, reminders)
+	return c.JSON(reminders)
 }
 
-func (h *handler) getReminder(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	idStr := c.Param("id")
+func (h *handler) updateReminder(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	req := &model.ReminderUpdateRequest{}
+	if err := h.parse(c, req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
 	reminder, err := h.GetReminderByID(userID, id)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
-
-	c.JSON(http.StatusOK, reminder)
-}
-
-func (h *handler) updateReminder(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	idStr := c.Param("id")
-
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
-	}
-
-	reminder, err := h.GetReminderByID(userID, id)
-	if err != nil {
-		c.JSON(http.StatusNotFound, err.Error())
-		return
-	}
-
-	r := &model.UpdateReminderRequest{}
-	if err := c.BindJSON(r); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	r.Patch(userID, reminder)
+	req.Patch(reminder)
 
 	reminder, err = h.UpdateReminder(reminder)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, reminder)
+	return c.JSON(reminder)
 }
 
-func (h *handler) deleteReminder(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	idStr := c.Param("id")
+func (h *handler) deleteReminder(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	err = h.DeleteReminder(userID, id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
+	if _, err := h.GetReminderByID(userID, id); err != nil {
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.Status(http.StatusNoContent)
+	if err = h.DeleteReminder(userID, id); err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.SendStatus(fiber.StatusOK)
 }

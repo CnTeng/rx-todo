@@ -1,8 +1,8 @@
-@token="Bearer fYORx5uRpBPyObqU84DyOkHtDIheBB2fyARsOJ5Veqo="
+@token=fYORx5uRpBPyObqU84DyOkHtDIheBB2fyARsOJ5Veqo=
 
 # Create a new task
 POST http://localhost:8080/tasks HTTP/1.1
-Authorization: {{token}}
+Authorization: Bearer {{token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -23,19 +23,43 @@ Accept: application/json
 
 ###
 
+# Update a task
+PUT http://localhost:8080/tasks/27 HTTP/1.1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "content": "test1",
+  "description": "test",
+  "due": {
+    "date": "2024-07-01T00:00:00Z",
+    "recurring": false
+  },
+  "duration": {
+    "amount": 20,
+    "unit": "minute"
+  },
+  "labels": ["test", "test1"],
+  "priority": 2
+}
+
+###
+
 # Get all tasks
 GET http://localhost:8080/tasks HTTP/1.1
-Authorization: {{token}}
+Authorization: Bearer {{token}}
 Accept: application/json
 
 ###
 
+# Get a task
 GET http://localhost:8080/tasks/17 HTTP/1.1
-Authorization: {{token}}
+Authorization: Bearer {{token}}
 Accept: application/json
 
 ###
 
 # Delete a task
 DELETE http://localhost:8080/tasks/21 HTTP/1.1
-Authorization: {{token}}
+Authorization: Bearer {{token}}
