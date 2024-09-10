@@ -33,3 +33,12 @@ func (r *ReminderCreationRequest) Patch(reminder *Reminder) {
 func (r *ReminderUpdateRequest) Patch(reminder *Reminder) {
 	reminder.Due = r.Due
 }
+
+func (l *Reminder) ToSyncStatus(opt Operation) *SyncStatus {
+	return &SyncStatus{
+		UserID:     l.UserID,
+		ObjectIDs:  []int64{l.ID},
+		ObjectType: "reminder",
+		Operation:  opt,
+	}
+}

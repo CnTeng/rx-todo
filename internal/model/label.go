@@ -52,3 +52,12 @@ func (r *LabelUpdateRequest) Patch(label *Label) {
 		label.Color = *r.Color
 	}
 }
+
+func (l *Label) ToSyncStatus(opt Operation) *SyncStatus {
+	return &SyncStatus{
+		UserID:     l.UserID,
+		ObjectIDs:  []int64{l.ID},
+		ObjectType: "task",
+		Operation:  opt,
+	}
+}

@@ -103,12 +103,13 @@ func (h *handler) deleteToken(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if _, err := h.GetTokenByID(userID, id); err != nil {
+	token, err := h.GetTokenByID(userID, id)
+	if err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err := h.DeleteToken(userID, id); err != nil {
+	if err := h.DeleteToken(token); err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})
 	}

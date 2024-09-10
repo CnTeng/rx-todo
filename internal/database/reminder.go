@@ -1,53 +1,51 @@
 package database
 
 import (
+	"database/sql"
+	_ "embed"
 	"fmt"
 
 	"github.com/CnTeng/rx-todo/internal/model"
 )
 
+var (
+	//go:embed sql/reminder_create.sql
+	createReminderQuery string
+
+	//go:embed sql/reminder_get_by_id.sql
+	getReminderByIDQuery string
+
+	//go:embed sql/reminder_get_by_task.sql
+	getReminderByTaskIDQuery string
+
+	//go:embed sql/reminder_get_all.sql
+	getRemindersQuery string
+
+	//go:embed sql/reminder_update.sql
+	updateReminderQuery string
+
+	//go:embed sql/reminder_delete.sql
+	deleteReminderQuery string
+)
+
 func (db *DB) CreateReminder(reminder *model.Reminder) (*model.Reminder, error) {
-	query := `
-    INSERT INTO reminders 
-      (user_id, task_id, due)
-    VALUES 
-      ($1, $2, ROW($3, $4))
-    RETURNING 
-      id, created_at, updated_at
-  `
+	return reminder, db.withTx(func(tx *sql.Tx) (*model.SyncStatus, error) {
+		err := tx.QueryRow(
+			createReminderQuery,
+			reminder.UserID,
+			reminder.TaskID,
+			reminder.Due.Date,
+			reminder.Due.Recurring,
+		).Scan(&reminder.ID, &reminder.CreatedAt, &reminder.UpdatedAt)
 
-	err := db.QueryRow(
-		query,
-		reminder.UserID,
-		reminder.TaskID,
-		reminder.Due.Date,
-		reminder.Due.Recurring,
-	).Scan(&reminder.ID, &reminder.CreatedAt, &reminder.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to create reminder: %v", err)
-	}
-
-	return reminder, nil
+		return reminder.ToSyncStatus(model.CreateOperation), err
+	})
 }
 
 func (db *DB) GetReminderByID(userID, id int64) (*model.Reminder, error) {
 	reminder := new(model.Reminder)
-	query := `
-    SELECT
-      id,
-      user_id,
-      task_id,
-      (due).date,
-      (due).recurring,
-      created_at,
-      updated_at
-    FROM
-      reminders
-    WHERE 
-      id = $1 AND user_id = $2
-  `
 
-	err := db.QueryRow(query, id, userID).Scan(
+	err := db.QueryRow(getReminderByIDQuery, id, userID).Scan(
 		&reminder.ID,
 		&reminder.UserID,
 		&reminder.TaskID,
@@ -57,7 +55,7 @@ func (db *DB) GetReminderByID(userID, id int64) (*model.Reminder, error) {
 		&reminder.UpdatedAt,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("database: unable to get reminder: %v", err)
+		return nil, fmt.Errorf("failed to get reminder: %w", err)
 	}
 
 	return reminder, nil
@@ -65,22 +63,8 @@ func (db *DB) GetReminderByID(userID, id int64) (*model.Reminder, error) {
 
 func (db *DB) GetReminderByTaskID(userID, taskID int64) (*model.Reminder, error) {
 	reminder := new(model.Reminder)
-	query := `
-    SELECT
-      id,
-      user_id,
-      task_id,
-      (due).date,
-      (due).recurring,
-      created_at,
-      updated_at
-    FROM
-      reminders
-    WHERE 
-      user_id = $1 AND task_id = $2
-  `
 
-	err := db.QueryRow(query, userID, taskID).Scan(
+	err := db.QueryRow(getReminderByTaskIDQuery, userID, taskID).Scan(
 		&reminder.ID,
 		&reminder.UserID,
 		&reminder.TaskID,
@@ -90,7 +74,7 @@ func (db *DB) GetReminderByTaskID(userID, taskID int64) (*model.Reminder, error)
 		&reminder.UpdatedAt,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("database: unable to get reminder: %v", err)
+		return nil, fmt.Errorf("failed to get reminder: %w", err)
 	}
 
 	return reminder, nil
@@ -99,24 +83,9 @@ func (db *DB) GetReminderByTaskID(userID, taskID int64) (*model.Reminder, error)
 func (db *DB) GetReminders(userID int64) ([]*model.Reminder, error) {
 	var reminders []*model.Reminder
 
-	query := `
-    SELECT
-      id,
-      user_id,
-      task_id,
-      (due).date,
-      (due).recurring,
-      created_at,
-      updated_at
-    FROM
-      reminders
-    WHERE 
-      user_id = $1
-  `
-
-	rows, err := db.Query(query, userID)
+	rows, err := db.Query(getRemindersQuery, userID)
 	if err != nil {
-		return nil, fmt.Errorf("database: unable to get tasks: %v", err)
+		return nil, fmt.Errorf("failed to get tasks: %v", err)
 	}
 	defer rows.Close()
 
@@ -141,39 +110,22 @@ func (db *DB) GetReminders(userID int64) ([]*model.Reminder, error) {
 }
 
 func (db *DB) UpdateReminder(reminder *model.Reminder) (*model.Reminder, error) {
-	query := `
-    UPDATE 
-      reminders
-    SET
-      due = ROW($3, $4),
-      updated_at = NOW()
-    WHERE
-      id = $1 AND user_id = $2
-    RETURNING
-      updated_at
-  `
+	return reminder, db.withTx(func(tx *sql.Tx) (*model.SyncStatus, error) {
+		err := db.QueryRow(
+			updateReminderQuery,
+			reminder.ID,
+			reminder.UserID,
+			reminder.Due.Date,
+			reminder.Due.Recurring,
+		).Scan(&reminder.UpdatedAt)
 
-	err := db.QueryRow(
-		query,
-		reminder.ID,
-		reminder.UserID,
-		reminder.Due.Date,
-		reminder.Due.Recurring,
-	).Scan(&reminder.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to update reminder: %v", err)
-	}
-
-	return reminder, nil
+		return reminder.ToSyncStatus(model.UpdateOperation), err
+	})
 }
 
-func (db *DB) DeleteReminder(userID, id int64) error {
-	query := `DELETE FROM reminders WHERE id = $1 AND user_id = $2`
-
-	_, err := db.Exec(query, id, userID)
-	if err != nil {
-		return fmt.Errorf("database: unable to delete reminder: %v", err)
-	}
-
-	return nil
+func (db *DB) DeleteReminder(reminder *model.Reminder) error {
+	return db.withTx(func(tx *sql.Tx) (*model.SyncStatus, error) {
+		_, err := db.Exec(deleteReminderQuery, reminder.ID, reminder.UserID)
+		return reminder.ToSyncStatus(model.DeleteOperation), err
+	})
 }

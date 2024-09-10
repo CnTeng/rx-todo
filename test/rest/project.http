@@ -7,14 +7,14 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "content": "Inbox",
+  "content": "Inbox2",
   "description": ""
 }
 
 ###
 
 # Get a project
-GET http://localhost:8080/projects/22 HTTP/1.1
+GET http://localhost:8080/projects/46 HTTP/1.1
 Authorization: Bearer {{token}}
 Accept: application/json
 

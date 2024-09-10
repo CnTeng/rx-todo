@@ -1,29 +1,46 @@
 package database
 
 import (
+	_ "embed"
 	"fmt"
 
 	"github.com/CnTeng/rx-todo/internal/model"
 )
 
-func (db *DB) CreateToken(token *model.Token) (*model.Token, error) {
-	query := `
-    INSERT INTO tokens 
-			(user_id, token)
-    VALUES 
-			($1, $2)
-		RETURNING
-			id, token, created_at, updated_at
-  `
+var (
+	//go:embed sql/token_create.sql
+	createTokenQuery string
 
-	t, err := model.NewToken(token.UserID)
+	//go:embed sql/token_get_user_id.sql
+	getUserIDByTokenQuery string
+
+	//go:embed sql/token_get_by_id.sql
+	getTokenByIDQuery string
+
+	//go:embed sql/token_get_all.sql
+	getTokensQuery string
+
+	//go:embed sql/token_update.sql
+	updateTokenQuery string
+
+	//go:embed sql/token_delete.sql
+	deleteTokenQuery string
+)
+
+func (db *DB) CreateToken(token *model.Token) (*model.Token, error) {
+	newToken, err := model.NewToken(token.UserID)
 	if err != nil {
-		return nil, fmt.Errorf("database: unable to create token: %v", err)
+		return nil, fmt.Errorf("failed to create token: %w", err)
 	}
 
-	err = db.QueryRow(query, token.UserID, t).Scan(&token.ID, &token.Token, &token.CreatedAt, &token.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to add token: %v", err)
+	if err := db.
+		QueryRow(createTokenQuery, token.UserID, newToken).Scan(
+		&token.ID,
+		&token.Token,
+		&token.CreatedAt,
+		&token.UpdatedAt,
+	); err != nil {
+		return nil, fmt.Errorf("failed to create token: %w", err)
 	}
 
 	return token, nil
@@ -31,11 +48,9 @@ func (db *DB) CreateToken(token *model.Token) (*model.Token, error) {
 
 func (db *DB) GetUserIDByToken(token *string) (int64, error) {
 	var userID int64
-	query := `SELECT user_id FROM tokens WHERE token = $1`
 
-	err := db.QueryRow(query, token).Scan(&userID)
-	if err != nil {
-		return 0, fmt.Errorf("database: unable to authenticate token: %v", err)
+	if err := db.QueryRow(getUserIDByTokenQuery, token).Scan(&userID); err != nil {
+		return 0, fmt.Errorf("failed to authenticate token: %w", err)
 	}
 
 	return userID, nil
@@ -43,22 +58,15 @@ func (db *DB) GetUserIDByToken(token *string) (int64, error) {
 
 func (db *DB) GetTokenByID(userID, id int64) (*model.Token, error) {
 	t := &model.Token{}
-	query := `
-		SELECT
-			id,
-			user_id,
-			token,
-			created_at,
-			updated_at
-		FROM
-			tokens
-		WHERE
-			user_id = $1 AND id = $2
-	`
 
-	err := db.QueryRow(query, userID, id).Scan(&t.ID, &t.UserID, &t.Token, &t.CreatedAt, &t.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to get token: %v", err)
+	if err := db.QueryRow(getTokenByIDQuery, userID, id).Scan(
+		&t.ID,
+		&t.UserID,
+		&t.Token,
+		&t.CreatedAt,
+		&t.UpdatedAt,
+	); err != nil {
+		return nil, fmt.Errorf("failed to get token: %w", err)
 	}
 
 	return t, nil
@@ -66,78 +74,58 @@ func (db *DB) GetTokenByID(userID, id int64) (*model.Token, error) {
 
 func (db *DB) GetTokens(userID int64) ([]*model.Token, error) {
 	var tokens []*model.Token
-	query := `
-		SELECT
-			id,
-			user_id,
-			token,
-			created_at,
-			updated_at
-		FROM
-			tokens
-		WHERE
-			user_id = $1
-	`
 
-	rows, err := db.Query(query, userID)
+	rows, err := db.Query(getTokensQuery, userID)
 	if err != nil {
-		return nil, fmt.Errorf("database: unable to get tokens: %v", err)
+		return nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		t := &model.Token{}
+		token := &model.Token{}
 
-		if err := rows.Scan(&t.ID, &t.UserID, &t.Token, &t.CreatedAt, &t.UpdatedAt); err != nil {
-			return nil, fmt.Errorf("database: unable to get tokens: %v", err)
+		if err := rows.Scan(
+			&token.ID,
+			&token.UserID,
+			&token.Token,
+			&token.CreatedAt,
+			&token.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to get tokens: %w", err)
 		}
 
-		tokens = append(tokens, t)
+		tokens = append(tokens, token)
 	}
 
 	return tokens, nil
 }
 
 func (db *DB) UpdateToken(token *model.Token) (*model.Token, error) {
-	query := `
-		UPDATE 
-			tokens
-		SET
-			token = $3,
-			updated_at = NOW()
-		WHERE
-			id = $1 AND user_id = $2
-		RETURNING
-			id,
-			token,
-			created_at,
-			updated_at
-	`
-
-	t, err := model.NewToken(token.UserID)
+	newToken, err := model.NewToken(token.UserID)
 	if err != nil {
-		return nil, fmt.Errorf("database: unable to create token: %v", err)
+		return nil, fmt.Errorf("failed to create token: %w", err)
 	}
 
-	err = db.QueryRow(
-		query,
+	if err := db.QueryRow(
+		updateTokenQuery,
 		token.ID,
 		token.UserID,
-		t,
-	).Scan(&token.ID, &token.Token, &token.CreatedAt, &token.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to update token: %v", err)
+		newToken,
+	).Scan(
+		&token.ID,
+		&token.Token,
+		&token.CreatedAt,
+		&token.UpdatedAt,
+	); err != nil {
+		return nil, fmt.Errorf("failed to update token: %w", err)
 	}
 
 	return token, nil
 }
 
-func (db *DB) DeleteToken(userID, id int64) error {
-	query := `DELETE FROM tokens WHERE id = $1 AND user_id = $2`
-
-	_, err := db.Exec(query, id, userID)
-	if err != nil {
-		return fmt.Errorf("database: unable to delete token: %v", err)
+func (db *DB) DeleteToken(token *model.Token) error {
+	if _, err := db.Exec(deleteTokenQuery, token.ID, token.UserID); err != nil {
+		return fmt.Errorf("failed to delete token: %w", err)
 	}
 
 	return nil

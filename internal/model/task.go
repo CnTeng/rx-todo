@@ -144,3 +144,12 @@ func (r *TaskUpdateRequest) Patch(task *Task) {
 		task.Labels = *r.Labels
 	}
 }
+
+func (l *Task) ToSyncStatus(opt Operation) *SyncStatus {
+	return &SyncStatus{
+		UserID:     l.UserID,
+		ObjectIDs:  []int64{l.ID},
+		ObjectType: "task",
+		Operation:  opt,
+	}
+}

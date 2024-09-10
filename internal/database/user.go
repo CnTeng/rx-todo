@@ -1,134 +1,99 @@
 package database
 
 import (
+	"database/sql"
+	_ "embed"
 	"fmt"
 
 	"github.com/CnTeng/rx-todo/internal/model"
 	"golang.org/x/crypto/bcrypt"
 )
 
+var (
+	//go:embed sql/user_verify.sql
+	verifyUserQuery string
+
+	//go:embed sql/user_create.sql
+	createUserQuery string
+
+	//go:embed sql/user_create_inbox.sql
+	createUserInboxQuery string
+
+	//go:embed sql/user_update_inbox_id.sql
+	updateUserInboxIDQuery string
+
+	//go:embed sql/user_get_by_id.sql
+	getUserByIDQuery string
+
+	//go:embed sql/user_get_by_email.sql
+	getUserByEmailQuery string
+
+	//go:embed sql/user_get_inbox_id.sql
+	getUserInboxIDQuery string
+
+	//go:embed sql/user_update.sql
+	updateUserQuery string
+
+	//go:embed sql/user_delete.sql
+	deleteUserQuery string
+)
+
 func (db *DB) VerifyUser(id int64, password string) error {
 	var hashedPassword string
-	query := `SELECT password FROM users WHERE id = $1`
 
-	err := db.QueryRow(query, id).Scan(&hashedPassword)
-	if err != nil {
-		return fmt.Errorf("database: unable to verify user: %v", err)
+	if err := db.QueryRow(verifyUserQuery, id).Scan(&hashedPassword); err != nil {
+		return fmt.Errorf("failed to verify user: %w", err)
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)); err != nil {
-		return fmt.Errorf("database: unable to verify user: error password")
+		return fmt.Errorf("failed to verify user: error password")
 	}
 
 	return nil
 }
 
 func (db *DB) CreateUser(user *model.User) (*model.User, error) {
-	query := `
-    INSERT INTO users 
-			(username, password, email, timezone)
-    VALUES 
-			(LOWER($1), $2, $3, COALESCE($4, 'UTC'))
-		RETURNING 
-			id, timezone, created_at, updated_at
-  `
+	return user, db.withTx(func(tx *sql.Tx) (*model.SyncStatus, error) {
+		if err := tx.QueryRow(
+			createUserQuery,
+			user.Username,
+			user.Password,
+			user.Email,
+			user.Timezone,
+		).Scan(
+			&user.ID,
+			&user.Timezone,
+			&user.CreatedAt,
+			&user.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to create user: %w", err)
+		}
 
-	tx, err := db.Begin()
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to create user: %v", err)
-	}
-	defer func() { _ = tx.Rollback() }()
+		if err := tx.QueryRow(createUserInboxQuery, user.ID, "Inbox", true).Scan(&user.InboxID); err != nil {
+			return nil, fmt.Errorf("failed to create user inbox: %w", err)
+		}
 
-	// Create user
-	err = tx.QueryRow(
-		query,
-		user.Username,
-		user.Password,
-		user.Email,
-		user.Timezone,
-	).Scan(
-		&user.ID,
-		&user.Timezone,
-		&user.CreatedAt,
-		&user.UpdatedAt,
-	)
-	if err != nil {
-		_ = tx.Rollback()
-		return nil, fmt.Errorf("database: unable to create user: %v", err)
-	}
+		if _, err := tx.Exec(updateUserInboxIDQuery, user.ID, user.InboxID); err != nil {
+			return nil, fmt.Errorf("failed to create user inbox: %w", err)
+		}
 
-	// Create inbox for user
-	err = tx.QueryRow(
-		`
-			INSERT INTO projects 
-				(user_id, content, inbox) 
-			VALUES 
-				($1, $2, $3)
-			RETURNING
-				id
-		`, user.ID, "Inbox", true).Scan(&user.InboxID)
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to create user inbox: %v", err)
-	}
-
-	// Update user's inbox_id
-	_, err = tx.Exec(`UPDATE users	SET inbox_id = $2 WHERE id = $1`, user.ID, user.InboxID)
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to create user inbox: %v", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("database: unable to commit transaction: %v", err)
-	}
-
-	return user, nil
+		return user.ToSyncStatus(model.CreateOperation), nil
+	})
 }
 
 func (db *DB) GetUserByID(id int64) (*model.User, error) {
-	query := `
-		SELECT
-			id,
-			username,
-			password,
-			email,
-			timezone,
-			created_at,
-			updated_at
-		FROM
-			users
-		WHERE
-			id = $1
-	`
-
-	return db.fetchUser(query, id)
+	return db.fetchUser(getUserByIDQuery, id)
 }
 
 func (db *DB) GetUserByEmail(email string) (*model.User, error) {
-	query := `
-		SELECT
-			id,
-			username,
-			password,
-			email,
-			timezone,
-			created_at,
-			updated_at
-		FROM
-			users
-		WHERE
-			email = $1
-	`
-
-	return db.fetchUser(query, email)
+	return db.fetchUser(getUserByEmailQuery, email)
 }
 
 func (db *DB) GetUserInboxID(id int64) (int64, error) {
 	var inboxID int64
-	query := `SELECT inbox_id FROM users WHERE id = $1`
 
-	err := db.QueryRow(query, id).Scan(&inboxID)
-	if err != nil {
-		return 0, fmt.Errorf("database: unable to get user inbox id: %v", err)
+	if err := db.QueryRow(getUserInboxIDQuery, id).Scan(&inboxID); err != nil {
+		return 0, fmt.Errorf("failed to get user inbox id: %w", err)
 	}
 
 	return inboxID, nil
@@ -147,50 +112,32 @@ func (db *DB) fetchUser(query string, args ...any) (*model.User, error) {
 		&user.UpdatedAt,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("database: unable to get user: %v", err)
+		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 
 	return user, nil
 }
 
 func (db *DB) UpdateUser(user *model.User) (*model.User, error) {
-	query := `
-		UPDATE 
-			users
-		SET
-			username = LOWER($2),
-			password = $3,
-			email = $4,
-			timezone = $5
-			updated_at = NOW()
-		WHERE
-			id = $1
-		RETURNING 
-			created_at,
-			updated_at
-	`
+	return user, db.withTx(func(tx *sql.Tx) (*model.SyncStatus, error) {
+		if err := tx.QueryRow(
+			updateUserQuery,
+			user.ID,
+			user.Username,
+			user.Password,
+			user.Email,
+			user.Timezone,
+		).Scan(&user.CreatedAt, &user.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("failed to update user: %w", err)
+		}
 
-	err := db.QueryRow(
-		query,
-		user.ID,
-		user.Username,
-		user.Password,
-		user.Email,
-		user.Timezone,
-	).Scan(&user.CreatedAt, &user.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to update user: %v", err)
-	}
-
-	return user, nil
+		return user.ToSyncStatus(model.UpdateOperation), nil
+	})
 }
 
 func (db *DB) DeleteUser(id int64) error {
-	query := `DELETE FROM users WHERE id = $1`
-
-	_, err := db.Exec(query, id)
-	if err != nil {
-		return fmt.Errorf("database: unable to delete user: %v", err)
+	if _, err := db.Exec(deleteUserQuery, id); err != nil {
+		return fmt.Errorf("failed to delete user: %w", err)
 	}
 
 	return nil

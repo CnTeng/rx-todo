@@ -115,12 +115,13 @@ func (h *handler) deleteTask(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if _, err := h.GetTaskByID(userID, id); err != nil {
+	task, err := h.GetTaskByID(userID, id)
+	if err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err := h.DeleteTask(userID, id); err != nil {
+	if err := h.DeleteTask(task); err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})
 	}

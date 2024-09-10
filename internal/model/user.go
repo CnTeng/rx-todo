@@ -70,3 +70,12 @@ func (r *UpdateUserRequest) Patch(user *User) {
 		user.Timezone = r.Timezone
 	}
 }
+
+func (u *User) ToSyncStatus(opt Operation) *SyncStatus {
+	return &SyncStatus{
+		UserID:     u.ID,
+		ObjectIDs:  []int64{u.ID},
+		ObjectType: "user",
+		Operation:  opt,
+	}
+}

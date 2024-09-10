@@ -21,10 +21,10 @@ func validateError(e error) error {
 			errors = append(errors, fmt.Sprintf("%s is %s", err.Field(), err.Tag()))
 		}
 
-		return fmt.Errorf("validate: %s", strings.Join(errors, ", "))
+		return fmt.Errorf("%s", strings.Join(errors, ", "))
 	}
 
-	return fmt.Errorf("validate: %w", e)
+	return fmt.Errorf("%w", e)
 }
 
 func Validate(s any) error {

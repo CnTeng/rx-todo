@@ -2,50 +2,35 @@ package database
 
 import (
 	"database/sql"
+	_ "embed"
 	"fmt"
 	"time"
 
 	"github.com/CnTeng/rx-todo/internal/model"
 )
 
-func (db *DB) createTaskLabels(tx *sql.Tx, task *model.Task) error {
-	for _, label := range task.Labels {
-		var labelID int64
-		err := db.QueryRow(
-			`
-				SELECT
-					id 
-				FROM 
-					labels 
-				WHERE user_id = $1 AND name = $2
-			`, task.UserID, label).Scan(&labelID)
-		if err != nil {
-			return fmt.Errorf("database: unable to get label: %v", err)
-		}
+var (
+	//go:embed sql/task_create.sql
+	createTaskQuery string
 
-		_, err = tx.Exec(
-			`
-				INSERT INTO task_labels
-					(task_id, label_id)
-				VALUES
-					($1, $2)
-			`, task.ID, labelID)
-		if err != nil {
-			return fmt.Errorf("database: unable to create task labels: %v", err)
-		}
-	}
+	//go:embed sql/task_labels_create.sql
+	createTaskLabelsQuery string
 
-	return nil
-}
+	//go:embed sql/task_labels_delete.sql
+	deleteTaskLabelsQuery string
 
-func (db *DB) deleteTaskLabels(tx *sql.Tx, taskID int64) error {
-	_, err := tx.Exec(`DELETE FROM task_labels WHERE task_id = $1`, taskID)
-	if err != nil {
-		return fmt.Errorf("database: unable to delete task labels: %v", err)
-	}
+	//go:embed sql/task_get_by_id.sql
+	getTaskByIDQuery string
 
-	return nil
-}
+	//go:embed sql/task_get_all.sql
+	getTasksQuery string
+
+	//go:embed sql/task_update.sql
+	updateTaskQuery string
+
+	//go:embed sql/task_delete.sql
+	deleteTaskQuery string
+)
 
 func (db *DB) CreateTask(task *model.Task) (*model.Task, error) {
 	var dueDate *time.Time
@@ -63,47 +48,36 @@ func (db *DB) CreateTask(task *model.Task) (*model.Task, error) {
 		durationUnit = task.Duration.Unit
 	}
 
-	query := `
-		INSERT INTO tasks
-			(user_id, content, description, due, duration, priority, project_id, child_order)
-		VALUES
-			($1, $2, $3, ROW($4, $5), ROW($6, $7), $8, $9, $10)
-		RETURNING
-			id, created_at, updated_at
-	`
+	return task, db.withTx(func(tx *sql.Tx) (*model.SyncStatus, error) {
+		if err := tx.QueryRow(
+			createTaskQuery,
+			task.UserID,
+			task.Content,
+			task.Description,
+			dueDate,
+			dueRecurring,
+			durationAmount,
+			durationUnit,
+			task.Priority,
+			task.ProjectID,
+			task.ChildOrder,
+		).Scan(&task.ID, &task.CreatedAt, &task.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("failed to create task: %w", err)
+		}
 
-	tx, err := db.Begin()
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to create task: %v", err)
-	}
-	defer func() { _ = tx.Rollback() }()
+		for _, label := range task.Labels {
+			if _, err := tx.Exec(
+				createTaskLabelsQuery,
+				task.UserID,
+				label,
+				task.ID,
+			); err != nil {
+				return nil, fmt.Errorf("failed to create task labels: %w", err)
+			}
+		}
 
-	err = tx.QueryRow(
-		query,
-		task.UserID,
-		task.Content,
-		task.Description,
-		dueDate,
-		dueRecurring,
-		durationAmount,
-		durationUnit,
-		task.Priority,
-		task.ProjectID,
-		task.ChildOrder,
-	).Scan(&task.ID, &task.CreatedAt, &task.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to create task: %v", err)
-	}
-
-	if err := db.createTaskLabels(tx, task); err != nil {
-		return nil, fmt.Errorf("database: unable to create task labels: %v", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("database: unable to commit transaction: %v", err)
-	}
-
-	return task, nil
+		return task.ToSyncStatus(model.CreateOperation), nil
+	})
 }
 
 func (db *DB) GetTaskByID(userID, id int64) (*model.Task, error) {
@@ -113,34 +87,8 @@ func (db *DB) GetTaskByID(userID, id int64) (*model.Task, error) {
 	var durationUnit *string
 
 	task := new(model.Task)
-	query := `
-		SELECT
-			id,
-			user_id,
-			content,
-			description,
-			(due).date,
-			(due).recurring,
-			(duration).amount,
-			(duration).unit,
-			priority,
-			project_id,
-			parent_id,
-			child_order,
-			labels,
-			done,
-			done_at,
-			archived,
-			archived_at,
-			created_at,
-			updated_at
-		FROM
-			task_with_labels
-		WHERE
-			user_id = $1 AND id = $2
-	`
 
-	err := db.QueryRow(query, userID, id).Scan(
+	err := db.QueryRow(getTaskByIDQuery, userID, id).Scan(
 		&task.ID,
 		&task.UserID,
 		&task.Content,
@@ -162,7 +110,7 @@ func (db *DB) GetTaskByID(userID, id int64) (*model.Task, error) {
 		&task.UpdatedAt,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("database: unable to get task: %v", err)
+		return nil, fmt.Errorf("failed to get task: %w", err)
 	}
 
 	if (dueData != nil) && (dueRecurring != nil) {
@@ -184,36 +132,9 @@ func (db *DB) GetTasks(user int64) ([]*model.Task, error) {
 	var durationAmount *int
 	var durationUnit *string
 
-	query := `
-		SELECT
-			id,
-			user_id,
-			content,
-			description,
-			(due).date,
-			(due).recurring,
-			(duration).amount,
-			(duration).unit,
-			priority,
-			project_id,
-			parent_id,
-			child_order,
-			labels,
-			done,
-			done_at,
-			archived,
-			archived_at,
-			created_at,
-			updated_at
-		FROM
-			task_with_labels
-		WHERE
-			user_id = $1
-	`
-
-	rows, err := db.Query(query, user)
+	rows, err := db.Query(getTasksQuery, user)
 	if err != nil {
-		return nil, fmt.Errorf("database: unable to get tasks: %v", err)
+		return nil, fmt.Errorf("failed to get tasks: %w", err)
 	}
 	defer rows.Close()
 
@@ -241,7 +162,7 @@ func (db *DB) GetTasks(user int64) ([]*model.Task, error) {
 			&task.CreatedAt,
 			&task.UpdatedAt,
 		); err != nil {
-			return nil, fmt.Errorf("database: unable to get tasks: %v", err)
+			return nil, fmt.Errorf("failed to get tasks: %w", err)
 		}
 
 		if (dueData != nil) && (dueRecurring != nil) {
@@ -259,73 +180,50 @@ func (db *DB) GetTasks(user int64) ([]*model.Task, error) {
 }
 
 func (db *DB) UpdateTask(task *model.Task) (*model.Task, error) {
-	query := `
-    UPDATE
-			tasks
-    SET
-      content = $3,
-      description = $4,
-      due = ROW($5, $6),
-      duration = ROW($7, $8),
-      priority = $9,
-			project_id = $10,
-			parent_id = $11,
-			child_order = $12,
-			updated_at = now()
-    WHERE
-			id = $1 AND user_id = $2
-		RETURNING
-			updated_at
-  `
+	return task, db.withTx(func(tx *sql.Tx) (*model.SyncStatus, error) {
+		if err := tx.QueryRow(
+			updateTaskQuery,
+			task.ID,
+			task.UserID,
+			task.Content,
+			task.Description,
+			task.Due.Date,
+			task.Due.Recurring,
+			task.Duration.Amount,
+			task.Duration.Unit,
+			task.Priority,
+			task.ProjectID,
+			task.ParentID,
+			task.ChildOrder,
+		).Scan(&task.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("failed to update task: %w", err)
+		}
 
-	tx, err := db.Begin()
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to create task: %v", err)
-	}
-	defer func() { _ = tx.Rollback() }()
+		if _, err := tx.Exec(deleteTaskLabelsQuery, task.ID); err != nil {
+			return nil, fmt.Errorf("failed to delete task labels: %w", err)
+		}
 
-	err = tx.QueryRow(
-		query,
-		task.ID,
-		task.UserID,
-		task.Content,
-		task.Description,
-		task.Due.Date,
-		task.Due.Recurring,
-		task.Duration.Amount,
-		task.Duration.Unit,
-		task.Priority,
-		task.ProjectID,
-		task.ParentID,
-		task.ChildOrder,
-	).Scan(&task.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to update task: %v", err)
-	}
+		for _, label := range task.Labels {
+			if _, err := tx.Exec(
+				createTaskLabelsQuery,
+				task.UserID,
+				label,
+				task.ID,
+			); err != nil {
+				return nil, fmt.Errorf("failed to create task labels: %w", err)
+			}
+		}
 
-	err = db.deleteTaskLabels(tx, task.ID)
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to update task labels: %v", err)
-	}
-
-	if err := db.createTaskLabels(tx, task); err != nil {
-		return nil, fmt.Errorf("database: unable to update task labels: %v", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("database: unable to commit transaction: %v", err)
-	}
-
-	return task, nil
+		return task.ToSyncStatus(model.UpdateOperation), nil
+	})
 }
 
-func (db *DB) DeleteTask(user, id int64) error {
-	query := `DELETE FROM tasks WHERE id = $1 AND user_id = $2`
+func (db *DB) DeleteTask(task *model.Task) error {
+	return db.withTx(func(tx *sql.Tx) (*model.SyncStatus, error) {
+		if _, err := db.Exec(deleteTaskQuery, task.ID, task.UserID); err != nil {
+			return nil, fmt.Errorf("failed to delete task: %w", err)
+		}
 
-	_, err := db.Exec(query, id, user)
-	if err != nil {
-		return fmt.Errorf("database: unable to delete tasks: %v", err)
-	}
-
-	return nil
+		return task.ToSyncStatus(model.DeleteOperation), nil
+	})
 }

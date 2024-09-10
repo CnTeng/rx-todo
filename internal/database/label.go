@@ -1,50 +1,48 @@
 package database
 
 import (
+	"database/sql"
+	_ "embed"
 	"fmt"
 
 	"github.com/CnTeng/rx-todo/internal/model"
 )
 
-func (db *DB) CreateLabel(label *model.Label) (*model.Label, error) {
-	query := `
-		INSERT INTO labels
-			(user_id, name, color)
-		VALUES
-			($1, $2, $3)
-		RETURNING
-			id, created_at, updated_at
-	`
-	err := db.QueryRow(
-		query,
-		label.UserID,
-		label.Name,
-		label.Color,
-	).Scan(&label.ID, &label.CreatedAt, &label.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to create label: %v", err)
-	}
+var (
+	//go:embed sql/label_create.sql
+	createLabelQuery string
 
-	return label, nil
+	//go:embed sql/label_get_by_id.sql
+	getLabelByIDQuery string
+
+	//go:embed sql/label_get_by_name.sql
+	getLabelByNameQuery string
+
+	//go:embed sql/label_get_all.sql
+	getLabelsQuery string
+
+	//go:embed sql/label_update.sql
+	updateLabelQuery string
+
+	//go:embed sql/label_delete.sql
+	deleteLabelQuery string
+)
+
+func (db *DB) CreateLabel(label *model.Label) (*model.Label, error) {
+	return label, db.withTx(func(tx *sql.Tx) (*model.SyncStatus, error) {
+		return label.ToSyncStatus(model.CreateOperation), tx.QueryRow(
+			createLabelQuery,
+			label.UserID,
+			label.Name,
+			label.Color,
+		).Scan(&label.ID, &label.CreatedAt, &label.UpdatedAt)
+	})
 }
 
 func (db *DB) GetLabelByID(userID, id int64) (*model.Label, error) {
 	label := new(model.Label)
-	query := `
-		SELECT
-			id,
-			user_id,
-			name,
-			color,
-			created_at,
-			updated_at
-		FROM
-			labels
-		WHERE
-			user_id = $1 AND id = $2
-	`
 
-	err := db.QueryRow(query, userID, id).Scan(
+	err := db.QueryRow(getLabelByIDQuery, id, userID).Scan(
 		&label.ID,
 		&label.UserID,
 		&label.Name,
@@ -53,7 +51,7 @@ func (db *DB) GetLabelByID(userID, id int64) (*model.Label, error) {
 		&label.UpdatedAt,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("database: unable to get label: %v", err)
+		return nil, fmt.Errorf("failed to get label: %w", err)
 	}
 
 	return label, nil
@@ -61,21 +59,8 @@ func (db *DB) GetLabelByID(userID, id int64) (*model.Label, error) {
 
 func (db *DB) GetLabelByName(userID int64, name string) (*model.Label, error) {
 	label := new(model.Label)
-	query := `
-		SELECT
-			id,
-			user_id,
-			name,
-			color,
-			created_at,
-			updated_at
-		FROM
-			labels
-		WHERE
-			user_id = $1 AND name = $2
-	`
 
-	err := db.QueryRow(query, userID, name).Scan(
+	err := db.QueryRow(getLabelByNameQuery, userID, name).Scan(
 		&label.ID,
 		&label.UserID,
 		&label.Name,
@@ -84,7 +69,7 @@ func (db *DB) GetLabelByName(userID int64, name string) (*model.Label, error) {
 		&label.UpdatedAt,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("database: unable to get label: %v", err)
+		return nil, fmt.Errorf("failed to get label: %w", err)
 	}
 
 	return label, nil
@@ -92,23 +77,10 @@ func (db *DB) GetLabelByName(userID int64, name string) (*model.Label, error) {
 
 func (db *DB) GetLabels(userID int64) ([]*model.Label, error) {
 	var labels []*model.Label
-	query := `
-		SELECT
-			id,
-			user_id,
-			name,
-			color,
-			created_at,
-			updated_at
-		FROM
-			labels
-		WHERE
-			user_id = $1
-	`
 
-	rows, err := db.Query(query, userID)
+	rows, err := db.Query(getLabelsQuery, userID)
 	if err != nil {
-		return nil, fmt.Errorf("database: unable to get labels: %v", err)
+		return nil, fmt.Errorf("failed to get labels: %w", err)
 	}
 	defer rows.Close()
 
@@ -126,41 +98,25 @@ func (db *DB) GetLabels(userID int64) ([]*model.Label, error) {
 }
 
 func (db *DB) UpdateLabel(label *model.Label) (*model.Label, error) {
-	query := `
-		UPDATE
-			labels
-		SET
-			name = $3,
-			color = $4,
-			updated_at = NOW()
-		WHERE
-			id = $1 AND user_id = $2
-		RETURNING
-			created_at,
-			updated_at
-	`
+	return label, db.withTx(func(tx *sql.Tx) (*model.SyncStatus, error) {
+		err := tx.QueryRow(
+			updateLabelQuery,
+			label.ID,
+			label.UserID,
+			label.Name,
+			label.Color,
+		).Scan(&label.CreatedAt, &label.UpdatedAt)
 
-	err := db.QueryRow(
-		query,
-		label.ID,
-		label.UserID,
-		label.Name,
-		label.Color,
-	).Scan(&label.CreatedAt, &label.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to update label: %v", err)
-	}
-
-	return label, nil
+		return label.ToSyncStatus(model.UpdateOperation), err
+	})
 }
 
-func (db *DB) DeleteLabel(userID, id int64) error {
-	query := `DELETE FROM labels WHERE id = $1 AND user_id = $2`
+func (db *DB) DeleteLabel(label *model.Label) error {
+	return db.withTx(func(tx *sql.Tx) (*model.SyncStatus, error) {
+		if _, err := db.Exec(deleteLabelQuery, label.ID, label.UserID); err != nil {
+			return nil, fmt.Errorf("failed to delete label: %w", err)
+		}
 
-	_, err := db.Exec(query, id, userID)
-	if err != nil {
-		return fmt.Errorf("database: unable to delete label: %v", err)
-	}
-
-	return nil
+		return label.ToSyncStatus(model.DeleteOperation), nil
+	})
 }

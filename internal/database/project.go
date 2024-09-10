@@ -1,100 +1,90 @@
 package database
 
 import (
+	"database/sql"
+	_ "embed"
 	"fmt"
 
 	"github.com/CnTeng/rx-todo/internal/model"
 )
 
+var (
+	//go:embed sql/project_create.sql
+	createProjectQuery string
+
+	//go:embed sql/project_get_by_id.sql
+	getProjectByIDQuery string
+
+	//go:embed sql/project_get_all.sql
+	getProjectsQuery string
+
+	//go:embed sql/project_update.sql
+	updateProjectQuery string
+
+	//go:embed sql/project_update_order.sql
+	updateProjectOrderQuery string
+
+	//go:embed sql/project_delete.sql
+	deleteProjectQuery string
+
+	//go:embed sql/project_archive.sql
+	archiveProjectQuery string
+
+	//go:embed sql/project_unarchive.sql
+	unarchiveProjectQuery string
+)
+
 func (db *DB) CreateProject(project *model.Project) (*model.Project, error) {
-	query := `
-		INSERT INTO projects
-			(user_id, content, description, parent_id, child_order, favorite)
-		VALUES 
-			($1, $2, $3, $4, $5, $6)
-		RETURNING 
-      id, inbox, archived, archived_at, created_at, updated_at
-	`
+	return project, db.withTx(
+		func(tx *sql.Tx) (*model.SyncStatus, error) {
+			rows, err := tx.Query(
+				updateProjectOrderQuery,
+				project.UserID,
+				project.ParentID,
+				project.ChildOrder,
+			)
+			if err != nil {
+				return nil, fmt.Errorf("failed to update project order: %w", err)
+			}
+			defer rows.Close()
 
-	tx, err := db.Begin()
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to begin transaction: %v", err)
-	}
-	defer func() { _ = tx.Rollback() }()
+			status := project.ToSyncStatus(model.UpdateOperation).ClearObjectIDs()
+			for rows.Next() {
+				var id int64
+				if err := rows.Scan(&id); err != nil {
+					return nil, fmt.Errorf("failed to scan project id: %w", err)
+				}
+				status.ObjectIDs = append(status.ObjectIDs, id)
+			}
 
-	if project.ParentID == nil {
-		_, err = tx.Exec(`
-			UPDATE 
-				projects 
-			SET 
-				child_order = child_order + 1
-    	WHERE 
-				user_id = $1 AND parent_id IS NULL AND child_order >= $2
-			`, project.UserID, project.ChildOrder)
-	} else {
-		_, err = tx.Exec(`
-			UPDATE 
-				projects 
-			SET 
-				child_order = child_order + 1
-    	WHERE 
-				user_id = $1 AND parent_id = $2 AND child_order >= $3
-			`, project.UserID, project.ParentID, project.ChildOrder)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to create task: %v", err)
-	}
+			return status, nil
+		},
+		func(tx *sql.Tx) (*model.SyncStatus, error) {
+			err := tx.QueryRow(
+				createProjectQuery,
+				project.UserID,
+				project.Content,
+				project.Description,
+				project.ParentID,
+				project.ChildOrder,
+				project.Favorite,
+			).Scan(
+				&project.ID,
+				&project.Inbox,
+				&project.Archived,
+				&project.ArchivedAt,
+				&project.CreatedAt,
+				&project.UpdatedAt,
+			)
 
-	err = tx.QueryRow(
-		query,
-		project.UserID,
-		project.Content,
-		project.Description,
-		project.ParentID,
-		project.ChildOrder,
-		project.Favorite,
-	).Scan(
-		&project.ID,
-		&project.Inbox,
-		&project.Archived,
-		&project.ArchivedAt,
-		&project.CreatedAt,
-		&project.UpdatedAt,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to create task: %v", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("database: unable to commit transaction: %v", err)
-	}
-
-	return project, nil
+			return project.ToSyncStatus(model.CreateOperation), err
+		})
 }
 
 func (db *DB) GetProjectByID(userID, id int64) (*model.Project, error) {
 	project := &model.Project{}
-	query := `
-		SELECT
-      id,
-      user_id,
-      content,
-      description,
-      parent_id,
-      child_order,
-      inbox,
-      favorite,
-      archived,
-      archived_at,
-      created_at,
-      updated_at
-		FROM
-      projects
-		WHERE
-			user_id = $1 AND id = $2
-	`
 
-	err := db.QueryRow(query, userID, id).Scan(
+	err := db.QueryRow(getProjectByIDQuery, id, userID).Scan(
 		&project.ID,
 		&project.UserID,
 		&project.Content,
@@ -109,7 +99,7 @@ func (db *DB) GetProjectByID(userID, id int64) (*model.Project, error) {
 		&project.UpdatedAt,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("database: unable to get task: %v", err)
+		return nil, fmt.Errorf("failed to get project: %w", err)
 	}
 
 	return project, nil
@@ -117,29 +107,10 @@ func (db *DB) GetProjectByID(userID, id int64) (*model.Project, error) {
 
 func (db *DB) GetProjects(userID int64) ([]*model.Project, error) {
 	var projects []*model.Project
-	query := `
-		SELECT
-      id,
-      user_id,
-      content,
-      description,
-      parent_id,
-      child_order,
-      inbox,
-      favorite,
-      archived,
-      archived_at,
-      created_at,
-      updated_at
-		FROM
-			projects
-		WHERE
-			user_id = $1
-	`
 
-	rows, err := db.Query(query, userID)
+	rows, err := db.Query(getProjectsQuery, userID)
 	if err != nil {
-		return nil, fmt.Errorf("database: unable to get tasks: %v", err)
+		return nil, fmt.Errorf("failed to get projects: %w", err)
 	}
 	defer rows.Close()
 
@@ -147,7 +118,6 @@ func (db *DB) GetProjects(userID int64) ([]*model.Project, error) {
 		project := &model.Project{}
 
 		if err := rows.Scan(
-
 			&project.ID,
 			&project.UserID,
 			&project.Content,
@@ -161,7 +131,7 @@ func (db *DB) GetProjects(userID int64) ([]*model.Project, error) {
 			&project.CreatedAt,
 			&project.UpdatedAt,
 		); err != nil {
-			return nil, fmt.Errorf("database: unable to get tasks: %v", err)
+			return nil, fmt.Errorf("failed to get tasks: %w", err)
 		}
 
 		projects = append(projects, project)
@@ -171,117 +141,79 @@ func (db *DB) GetProjects(userID int64) ([]*model.Project, error) {
 }
 
 func (db *DB) UpdateProject(project *model.Project) (*model.Project, error) {
-	query := `
-		UPDATE 
-			projects
-		SET 
-			content = $3,
-			description = $4,
-			parent_id = $5,
-			child_order = $6,
-			inbox = $7,
-			favorite = $8,
-			updated_at = NOW()
-		WHERE 
-			id = $1 AND user_id = $2
-		RETURNING 
-			updated_at
-	`
-
-	err := db.QueryRow(
-		query,
-		project.ID,
-		project.UserID,
-		project.Content,
-		project.Description,
-		project.ParentID,
-		project.ChildOrder,
-		project.Inbox,
-		project.Favorite,
-	).Scan(&project.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("database: unable to update task: %v", err)
-	}
-
-	return project, nil
-}
-
-func (db *DB) UpdateProjects(projects []*model.Project) error {
-	query := `
-		UPDATE 
-			projects
-		SET 
-			content = $3,
-			description = $4,
-			parent_id = $5,
-			child_order = $6,
-			updated_at = NOW()
-		WHERE 
-			id = $1 AND user_id = $2
-		RETURNING 
-			updated_at
-	`
-
-	tx, err := db.Begin()
-	if err != nil {
-		return fmt.Errorf("database: unable to begin transaction: %v", err)
-	}
-	defer func() { _ = tx.Rollback() }()
-
-	for _, project := range projects {
+	return project, db.withTx(func(tx *sql.Tx) (*model.SyncStatus, error) {
 		err := tx.QueryRow(
-			query,
+			updateProjectQuery,
 			project.ID,
 			project.UserID,
 			project.Content,
 			project.Description,
 			project.ParentID,
 			project.ChildOrder,
+			project.Inbox,
+			project.Favorite,
 		).Scan(&project.UpdatedAt)
-		if err != nil {
-			return fmt.Errorf("database: unable to update tasks: %v", err)
+
+		return project.ToSyncStatus(model.UpdateOperation), err
+	})
+}
+
+func (db *DB) UpdateProjects(projects []*model.Project) error {
+	return db.withTx(func(tx *sql.Tx) (*model.SyncStatus, error) {
+		status := projects[0].ToSyncStatus(model.UpdateOperation).ClearObjectIDs()
+		for _, project := range projects {
+			err := tx.QueryRow(
+				updateProjectQuery,
+				project.ID,
+				project.UserID,
+				project.Content,
+				project.Description,
+				project.ParentID,
+				project.ChildOrder,
+				project.Inbox,
+				project.Favorite,
+			).Scan(&project.UpdatedAt)
+			if err != nil {
+				return nil, fmt.Errorf("failed to update projects: %w", err)
+			}
+
+			status.ObjectIDs = append(status.ObjectIDs, project.ID)
 		}
-	}
 
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("database: unable to commit transaction: %v", err)
-	}
-
-	return nil
+		return status, nil
+	})
 }
 
-func (db *DB) DeleteProject(userID, id int64) error {
-	inboxID, err := db.GetUserInboxID(userID)
-	if err == nil && inboxID == id {
-		return fmt.Errorf("unable to delete inbox project")
+func (db *DB) DeleteProject(project *model.Project) error {
+	if inboxID, err := db.GetUserInboxID(project.UserID); err == nil && inboxID == project.ID {
+		return fmt.Errorf("failed to delete inbox")
 	}
 
-	query := `DELETE FROM projects WHERE id = $1 AND user_id = $2`
-	return db.execSimpleQuery(query, id, userID)
+	return db.withTx(func(tx *sql.Tx) (*model.SyncStatus, error) {
+		if _, err := db.Exec(deleteProjectQuery, project.ID, project.UserID); err != nil {
+			return nil, fmt.Errorf("failed to delete project: %w", err)
+		}
+
+		return project.ToSyncStatus(model.DeleteOperation), nil
+	})
 }
 
-func (db *DB) ArchiveProject(userID, id int64) error {
-	query := `
-		UPDATE 
-			projects 
-		SET 
-			archived = TRUE,
-			archived_at = NOW()
-		WHERE
-			id = $1 AND user_id = $2
-	`
-	return db.execSimpleQuery(query, id, userID)
+func (db *DB) ArchiveProject(project *model.Project) error {
+	return db.withTx(func(tx *sql.Tx) (*model.SyncStatus, error) {
+		if _, err := db.Exec(archiveProjectQuery, project.ID, project.UserID); err != nil {
+			return nil, fmt.Errorf("failed to archive project: %w", err)
+		}
+
+		return project.ToSyncStatus(model.UpdateOperation), nil
+	})
 }
 
-func (db *DB) UnarchiveProject(userID, id int64) error {
-	query := `
-		UPDATE 
-			projects 
-		SET 
-			archived = FALSE,
-			archived_at = NULL
-		WHERE
-			id = $1 AND user_id = $2
-	`
-	return db.execSimpleQuery(query, id, userID)
+func (db *DB) UnarchiveProject(project *model.Project) error {
+	return db.withTx(func(tx *sql.Tx) (*model.SyncStatus, error) {
+		if _, err := db.Exec(unarchiveProjectQuery, project.ID, project.UserID); err != nil {
+			return nil, fmt.Errorf("failed to unarchive project: %w", err)
+		}
+
+		return project.ToSyncStatus(model.UpdateOperation), nil
+	})
 }

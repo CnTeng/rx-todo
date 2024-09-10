@@ -129,3 +129,29 @@ CREATE TABLE reminders (
     FOREIGN KEY (task_id) REFERENCES tasks (id) ON DELETE CASCADE
 );
 
+CREATE TYPE object_type AS ENUM (
+    'label',
+    'project',
+    'reminder',
+    'task',
+    'user'
+);
+
+CREATE TYPE operation AS ENUM (
+    'delete',
+    'create',
+    'update'
+);
+
+CREATE TABLE sync_status (
+    id bigserial,
+    user_id bigint NOT NULL,
+    object_id bigint NOT NULL,
+    object_type object_type NOT NULL,
+    operation operation NOT NULL,
+    token uuid NOT NULL DEFAULT gen_random_uuid (),
+    created_at timestamp NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (id),
+    UNIQUE (token)
+);
+

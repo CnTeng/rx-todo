@@ -109,12 +109,13 @@ func (h *handler) deleteReminder(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if _, err := h.GetReminderByID(userID, id); err != nil {
+	reminder, err := h.GetReminderByID(userID, id)
+	if err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err = h.DeleteReminder(userID, id); err != nil {
+	if err = h.DeleteReminder(reminder); err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})
 	}

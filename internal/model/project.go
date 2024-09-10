@@ -99,3 +99,12 @@ func (r *ProjectUpdateRequest) Patch(project *Project) {
 func (m *ProjectReorderMap) Patch(project *Project) {
 	project.ChildOrder = m.ChildOrder
 }
+
+func (p *Project) ToSyncStatus(opt Operation) *SyncStatus {
+	return &SyncStatus{
+		UserID:     p.UserID,
+		ObjectIDs:  []int64{p.ID},
+		ObjectType: "project",
+		Operation:  opt,
+	}
+}

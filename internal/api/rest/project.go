@@ -26,7 +26,7 @@ func (h *handler) createProject(c *fiber.Ctx) error {
 	req := &model.ProjectCreationRequest{}
 	if err := h.parse(c, req); err != nil {
 		return c.Status(fiber.StatusBadRequest).
-			JSON(fiber.Map{"error": err.Error()})
+			JSON(fiber.Map{"parser": err.Error()})
 	}
 
 	project := &model.Project{UserID: userID}
@@ -35,7 +35,7 @@ func (h *handler) createProject(c *fiber.Ctx) error {
 	project, err := h.CreateProject(project)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).
-			JSON(fiber.Map{"error": err.Error()})
+			JSON(fiber.Map{"db": err.Error()})
 	}
 
 	return c.JSON(project)
@@ -142,12 +142,13 @@ func (h *handler) archiveProject(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if _, err := h.GetProjectByID(userID, id); err != nil {
+	project, err := h.GetProjectByID(userID, id)
+	if err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err := h.ArchiveProject(userID, id); err != nil {
+	if err := h.ArchiveProject(project); err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})
 	}
@@ -164,12 +165,13 @@ func (h *handler) unarchiveProject(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if _, err := h.GetProjectByID(userID, id); err != nil {
+	project, err := h.GetProjectByID(userID, id)
+	if err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err := h.UnarchiveProject(userID, id); err != nil {
+	if err := h.UnarchiveProject(project); err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})
 	}
@@ -186,12 +188,13 @@ func (h *handler) deleteProject(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if _, err := h.GetProjectByID(userID, id); err != nil {
+	project, err := h.GetProjectByID(userID, id)
+	if err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err := h.DeleteProject(userID, id); err != nil {
+	if err := h.DeleteProject(project); err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})
 	}

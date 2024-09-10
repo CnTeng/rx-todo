@@ -7,7 +7,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "name": "Label 1",
+  "name": "Label 4",
   "color": "#000000"
 }
 
@@ -28,18 +28,18 @@ Accept: application/json
 ###
 
 # Delete a label
-DELETE http://localhost:8080/labels/26 HTTP/1.1
+DELETE http://localhost:8080/labels/27 HTTP/1.1
 Authorization: Bearer {{token}}
 Accept: application/json
 
 ###
 
 # Update a label
-PUT http://localhost:8080/labels/7 HTTP/1.1
+PUT http://localhost:8080/labels/29 HTTP/1.1
 Authorization: Bearer {{token}}
 Content-Type: application/json
 Accept: application/json
 
 {
-  "name": "test3"
+  "name": "test4"
 }

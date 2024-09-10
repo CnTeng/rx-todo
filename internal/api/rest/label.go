@@ -23,7 +23,7 @@ func (h *handler) createLabel(c *fiber.Ctx) error {
 	req := &model.LabelCreationRequest{}
 	if err := h.parse(c, req); err != nil {
 		return c.Status(fiber.StatusBadRequest).
-			JSON(fiber.Map{"error": err.Error()})
+			JSON(fiber.Map{"parser": err.Error()})
 	}
 
 	label := &model.Label{UserID: userID}
@@ -32,7 +32,7 @@ func (h *handler) createLabel(c *fiber.Ctx) error {
 	label, err := h.CreateLabel(label)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).
-			JSON(fiber.Map{"error": err.Error()})
+			JSON(fiber.Map{"db": err.Error()})
 	}
 
 	return c.JSON(label)
@@ -44,13 +44,13 @@ func (h *handler) getLabel(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).
-			JSON(fiber.Map{"error": err.Error()})
+			JSON(fiber.Map{"parser": err.Error()})
 	}
 
 	label, err := h.GetLabelByID(userID, id)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).
-			JSON(fiber.Map{"error": err.Error()})
+			JSON(fiber.Map{"db": err.Error()})
 	}
 
 	return c.JSON(label)
@@ -62,7 +62,7 @@ func (h *handler) getLabels(c *fiber.Ctx) error {
 	labels, err := h.GetLabels(userID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).
-			JSON(fiber.Map{"error": err.Error()})
+			JSON(fiber.Map{"db": err.Error()})
 	}
 
 	return c.JSON(labels)
@@ -74,19 +74,19 @@ func (h *handler) updateLabel(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).
-			JSON(fiber.Map{"error": err.Error()})
+			JSON(fiber.Map{"parser": err.Error()})
 	}
 
 	req := &model.LabelUpdateRequest{}
 	if err := h.parse(c, req); err != nil {
 		return c.Status(fiber.StatusBadRequest).
-			JSON(fiber.Map{"error": err.Error()})
+			JSON(fiber.Map{"parser": err.Error()})
 	}
 
 	label, err := h.GetLabelByID(userID, id)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).
-			JSON(fiber.Map{"error": err.Error()})
+			JSON(fiber.Map{"db": err.Error()})
 	} else {
 		req.Patch(label)
 	}
@@ -94,7 +94,7 @@ func (h *handler) updateLabel(c *fiber.Ctx) error {
 	label, err = h.UpdateLabel(label)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).
-			JSON(fiber.Map{"error": err.Error()})
+			JSON(fiber.Map{"db": err.Error()})
 	}
 
 	return c.JSON(label)
@@ -106,17 +106,18 @@ func (h *handler) deleteLabel(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).
-			JSON(fiber.Map{"error": err.Error()})
+			JSON(fiber.Map{"parser": err.Error()})
 	}
 
-	if _, err := h.GetLabelByID(userID, id); err != nil {
+	label, err := h.GetLabelByID(userID, id)
+	if err != nil {
 		return c.Status(fiber.StatusNotFound).
-			JSON(fiber.Map{"error": err.Error()})
+			JSON(fiber.Map{"db": err.Error()})
 	}
 
-	if err := h.DeleteLabel(userID, id); err != nil {
+	if err := h.DeleteLabel(label); err != nil {
 		return c.Status(fiber.StatusInternalServerError).
-			JSON(fiber.Map{"error": err.Error()})
+			JSON(fiber.Map{"db": err.Error()})
 	}
 
 	return c.SendStatus(fiber.StatusOK)
