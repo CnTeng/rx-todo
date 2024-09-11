@@ -1,11 +1,11 @@
 SELECT
-    id,
-    user_id,
-    token,
-    created_at,
-    updated_at
+  id,
+  user_id,
+  token,
+  created_at,
+  updated_at
 FROM
-    tokens
+  tokens
 WHERE
-    user_id = $1
-    AND id = $2
+  user_id = $1
+  AND id = $2

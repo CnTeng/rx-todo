@@ -1,11 +1,11 @@
 SELECT
-    id,
-    user_id,
-    name,
-    color,
-    created_at,
-    updated_at
+  id,
+  user_id,
+  name,
+  color,
+  created_at,
+  updated_at
 FROM
-    labels
+  labels
 WHERE
-    user_id = $1
+  user_id = $1

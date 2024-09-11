@@ -1,12 +1,12 @@
 SELECT
-    id,
-    username,
-    PASSWORD,
-    email,
-    timezone,
-    created_at,
-    updated_at
+  id,
+  username,
+  PASSWORD,
+  email,
+  timezone,
+  created_at,
+  updated_at
 FROM
-    users
+  users
 WHERE
-    id = $1
+  id = $1

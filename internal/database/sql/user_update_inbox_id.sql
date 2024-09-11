@@ -1,6 +1,5 @@
-UPDATE
-    users
+UPDATE users
 SET
-    inbox_id = $2
+  inbox_id = $2
 WHERE
-    id = $1
+  id = $1

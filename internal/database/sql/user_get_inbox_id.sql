@@ -1,6 +1,6 @@
 SELECT
-    inbox_id
+  inbox_id
 FROM
-    users
+  users
 WHERE
-    id = $1
+  id = $1

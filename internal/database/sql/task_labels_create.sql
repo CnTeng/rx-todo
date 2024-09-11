@@ -1,9 +1,10 @@
-INSERT INTO task_labels (task_id, label_id)
+INSERT INTO
+  task_labels (task_id, label_id)
 SELECT
-    $3,
-    id
+  $3,
+  id
 FROM
-    labels
+  labels
 WHERE
-    user_id = $1
-    AND name = $2
+  user_id = $1
+  AND name = $2

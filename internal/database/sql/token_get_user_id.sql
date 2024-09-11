@@ -1,6 +1,6 @@
 SELECT
-    user_id
+  user_id
 FROM
-    tokens
+  tokens
 WHERE
-    token = $1
+  token = $1

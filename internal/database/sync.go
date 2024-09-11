@@ -10,7 +10,6 @@ import (
 )
 
 //go:embed sql/sync_create.sql
-
 var createSyncStatusQuery string
 
 func (db *DB) createSyncStatus(tx *sql.Tx, status *model.SyncStatus) error {

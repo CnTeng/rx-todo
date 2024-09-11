@@ -1,6 +1,6 @@
 SELECT
-    PASSWORD
+  PASSWORD
 FROM
-    users
+  users
 WHERE
-    id = $1
+  id = $1
