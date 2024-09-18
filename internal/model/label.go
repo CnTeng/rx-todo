@@ -1,20 +1,13 @@
 package model
 
-import (
-	"fmt"
-	"time"
-)
+import "fmt"
 
 // Label represents a label
 type Label struct {
-	ID     int64  `json:"id"`
+	Resource
 	UserID int64  `json:"user_id"`
 	Name   string `json:"name"`
 	Color  string `json:"color"`
-
-	// Meta fields
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // LabelCreationRequest represents a request to create a label
@@ -50,14 +43,5 @@ func (r *LabelUpdateRequest) Patch(label *Label) {
 
 	if r.Color != nil {
 		label.Color = *r.Color
-	}
-}
-
-func (l *Label) ToSyncStatus(opt Operation) *SyncStatus {
-	return &SyncStatus{
-		UserID:     l.UserID,
-		ObjectIDs:  []int64{l.ID},
-		ObjectType: "task",
-		Operation:  opt,
 	}
 }

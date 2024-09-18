@@ -7,7 +7,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "content": "Inbox2",
+  "content": "Inbox3",
   "description": ""
 }
 

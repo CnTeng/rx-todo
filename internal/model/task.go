@@ -13,7 +13,7 @@ type Duration struct {
 }
 
 type Task struct {
-	ID          int64          `json:"id"`
+	Resource
 	UserID      int64          `json:"user_id"`
 	Content     string         `json:"content"`
 	Description string         `json:"description"`
@@ -28,10 +28,6 @@ type Task struct {
 	DoneAt      *time.Time     `json:"done_at,omitempty"`
 	Archived    bool           `json:"archived"`
 	ArchivedAt  *time.Time     `json:"archived_at,omitempty"`
-
-	// Meta fields
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type TaskCreationRequest struct {
@@ -142,14 +138,5 @@ func (r *TaskUpdateRequest) Patch(task *Task) {
 
 	if r.Labels != nil {
 		task.Labels = *r.Labels
-	}
-}
-
-func (l *Task) ToSyncStatus(opt Operation) *SyncStatus {
-	return &SyncStatus{
-		UserID:     l.UserID,
-		ObjectIDs:  []int64{l.ID},
-		ObjectType: "task",
-		Operation:  opt,
 	}
 }

@@ -1,22 +1,14 @@
 package model
 
-import (
-	"time"
-
-	"golang.org/x/crypto/bcrypt"
-)
+import "golang.org/x/crypto/bcrypt"
 
 type User struct {
-	ID       int64   `json:"id"`
+	Resource
 	Username string  `json:"username"`
 	Password string  `json:"-"`
 	Email    string  `json:"email"`
 	Timezone *string `json:"timezone"`
 	InboxID  int64   `json:"-"`
-
-	// Meta fields
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type CreateUserRequest struct {
@@ -68,14 +60,5 @@ func (r *UpdateUserRequest) Patch(user *User) {
 
 	if r.Timezone != nil {
 		user.Timezone = r.Timezone
-	}
-}
-
-func (u *User) ToSyncStatus(opt Operation) *SyncStatus {
-	return &SyncStatus{
-		UserID:     u.ID,
-		ObjectIDs:  []int64{u.ID},
-		ObjectType: "user",
-		Operation:  opt,
 	}
 }

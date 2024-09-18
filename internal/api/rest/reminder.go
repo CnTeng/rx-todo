@@ -115,10 +115,10 @@ func (h *handler) deleteReminder(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err = h.DeleteReminder(reminder); err != nil {
+	if err := h.DeleteReminder(reminder); err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.JSON(reminder)
 }

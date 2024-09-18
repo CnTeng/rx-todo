@@ -32,4 +32,5 @@ func Serve(db *database.DB, app *fiber.App) {
 	h.registerUserRoutes()
 	h.registerTokenRoutes()
 	h.registerReminderRoutes()
+	h.registerResourceRoutes()
 }

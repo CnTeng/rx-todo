@@ -1,6 +1,6 @@
 {
   "language": "postgresql",
   "keywordCase": "upper",
-  "dataTypeCase": "upper",
+  "dataTypeCase": "lower",
   "functionCase": "lower"
 }

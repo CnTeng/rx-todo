@@ -120,5 +120,5 @@ func (h *handler) deleteLabel(c *fiber.Ctx) error {
 			JSON(fiber.Map{"db": err.Error()})
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.SendStatus(fiber.StatusNoContent)
 }

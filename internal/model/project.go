@@ -7,7 +7,7 @@ import (
 
 // Project represents a project
 type Project struct {
-	ID          int64      `json:"id"`
+	Resource
 	UserID      int64      `json:"user_id"`
 	Content     string     `json:"content"`
 	Description string     `json:"description"`
@@ -17,11 +17,6 @@ type Project struct {
 	Favorite    bool       `json:"favorite"`
 	Archived    bool       `json:"archived"`
 	ArchivedAt  *time.Time `json:"archived_at,omitempty"`
-
-	// Meta fields
-	Position  float64   `json:"-"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // ProjectCreationRequest represents a request to create a project
@@ -98,13 +93,4 @@ func (r *ProjectUpdateRequest) Patch(project *Project) {
 
 func (m *ProjectReorderMap) Patch(project *Project) {
 	project.ChildOrder = m.ChildOrder
-}
-
-func (p *Project) ToSyncStatus(opt Operation) *SyncStatus {
-	return &SyncStatus{
-		UserID:     p.UserID,
-		ObjectIDs:  []int64{p.ID},
-		ObjectType: "project",
-		Operation:  opt,
-	}
 }

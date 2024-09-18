@@ -2,11 +2,14 @@ package database
 
 import (
 	"database/sql"
+	_ "embed"
 	"fmt"
 
-	"github.com/CnTeng/rx-todo/internal/model"
 	_ "github.com/lib/pq"
 )
+
+//go:embed sql/deletion_log_create.sql
+var createDeletionLogQuery string
 
 type DB struct {
 	*sql.DB
@@ -45,7 +48,7 @@ func (db *DB) Migrate() error {
 	return nil
 }
 
-type txFunc func(tx *sql.Tx) (*model.SyncStatus, error)
+type txFunc func(tx *sql.Tx) error
 
 func (db *DB) withTx(fns ...txFunc) error {
 	tx, err := db.Begin()
@@ -62,12 +65,7 @@ func (db *DB) withTx(fns ...txFunc) error {
 	}()
 
 	for _, fn := range fns {
-		status, err := fn(tx)
-		if err != nil {
-			return err
-		}
-
-		if err := db.createSyncStatus(tx, status); err != nil {
+		if err := fn(tx); err != nil {
 			return err
 		}
 	}

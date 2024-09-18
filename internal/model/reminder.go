@@ -1,17 +1,11 @@
 package model
 
-import "time"
-
 // Reminder represents a reminder
 type Reminder struct {
-	ID     int64 `json:"id"`
+	Resource
 	UserID int64 `json:"user_id"`
 	TaskID int64 `json:"task_id"`
 	Due    Due   `json:"due"`
-
-	// Meta fields
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // ReminderCreationRequest represents a request to create a reminder
@@ -32,13 +26,4 @@ func (r *ReminderCreationRequest) Patch(reminder *Reminder) {
 
 func (r *ReminderUpdateRequest) Patch(reminder *Reminder) {
 	reminder.Due = r.Due
-}
-
-func (l *Reminder) ToSyncStatus(opt Operation) *SyncStatus {
-	return &SyncStatus{
-		UserID:     l.UserID,
-		ObjectIDs:  []int64{l.ID},
-		ObjectType: "reminder",
-		Operation:  opt,
-	}
 }

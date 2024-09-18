@@ -2,6 +2,7 @@ package rest
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/CnTeng/rx-todo/internal/model"
 	"github.com/gofiber/fiber/v2"
@@ -13,7 +14,8 @@ func (h *handler) registerProjectRoutes() {
 	group.Post("", h.createProject)
 	group.Get(":id", h.getProject)
 	group.Get("", h.getProjects)
-	group.Put("reorder", h.reorderProject)
+	group.Get("sync", h.syncProjects)
+	group.Put("order", h.reorderProject)
 	group.Put(":id", h.updateProject)
 	group.Put(":id/archive", h.archiveProject)
 	group.Put(":id/unarchive", h.unarchiveProject)
@@ -63,6 +65,23 @@ func (h *handler) getProjects(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(int64)
 
 	projects, err := h.GetProjects(userID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(projects)
+}
+
+func (h *handler) syncProjects(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
+	syncToken, err := time.Parse(time.RFC3339, c.Query("sync_token"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	projects, err := h.GetProjectsByUpdateTime(userID, &syncToken)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"error": err.Error()})
@@ -125,12 +144,13 @@ func (h *handler) reorderProject(c *fiber.Ctx) error {
 		projects = append(projects, project)
 	}
 
-	if err := h.UpdateProjects(projects); err != nil {
+	projects, err := h.UpdateProjects(projects)
+	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.JSON(projects)
 }
 
 func (h *handler) archiveProject(c *fiber.Ctx) error {
@@ -148,12 +168,13 @@ func (h *handler) archiveProject(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err := h.ArchiveProject(project); err != nil {
+	project, err = h.ArchiveProject(project)
+	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.JSON(project)
 }
 
 func (h *handler) unarchiveProject(c *fiber.Ctx) error {
@@ -171,12 +192,13 @@ func (h *handler) unarchiveProject(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err := h.UnarchiveProject(project); err != nil {
+	project, err = h.UnarchiveProject(project)
+	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.JSON(project)
 }
 
 func (h *handler) deleteProject(c *fiber.Ctx) error {
@@ -199,5 +221,5 @@ func (h *handler) deleteProject(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.SendStatus(fiber.StatusNoContent)
 }

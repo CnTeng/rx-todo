@@ -5,8 +5,8 @@ CREATE TABLE users (
   email varchar(255) NOT NULL UNIQUE,
   timezone varchar(255) NOT NULL DEFAULT 'UTC',
   inbox_id bigint NOT NULL DEFAULT 0,
-  created_at timestamp NOT NULL DEFAULT NOW(),
-  updated_at timestamp NOT NULL DEFAULT NOW(),
+  created_at timestamp NOT NULL DEFAULT now(),
+  updated_at timestamp NOT NULL DEFAULT now(),
   PRIMARY KEY (id)
 );
 
@@ -14,8 +14,8 @@ CREATE TABLE tokens (
   id bigserial,
   user_id bigint NOT NULL,
   token varchar(255) NOT NULL UNIQUE,
-  created_at timestamp NOT NULL DEFAULT NOW(),
-  updated_at timestamp NOT NULL DEFAULT NOW(),
+  created_at timestamp NOT NULL DEFAULT now(),
+  updated_at timestamp NOT NULL DEFAULT now(),
   PRIMARY KEY (id),
   FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
@@ -31,8 +31,8 @@ CREATE TABLE projects (
   favorite boolean NOT NULL DEFAULT FALSE,
   archived boolean NOT NULL DEFAULT FALSE,
   archived_at timestamp,
-  created_at timestamp NOT NULL DEFAULT NOW(),
-  updated_at timestamp NOT NULL DEFAULT NOW(),
+  created_at timestamp NOT NULL DEFAULT now(),
+  updated_at timestamp NOT NULL DEFAULT now(),
   PRIMARY KEY (id),
   FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
   FOREIGN KEY (parent_id) REFERENCES projects (id) ON DELETE CASCADE,
@@ -58,8 +58,8 @@ CREATE TABLE tasks (
   done_at timestamp,
   archived boolean NOT NULL DEFAULT FALSE,
   archived_at timestamp,
-  created_at timestamp NOT NULL DEFAULT NOW(),
-  updated_at timestamp NOT NULL DEFAULT NOW(),
+  created_at timestamp NOT NULL DEFAULT now(),
+  updated_at timestamp NOT NULL DEFAULT now(),
   PRIMARY KEY (id),
   FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
   FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,
@@ -71,8 +71,8 @@ CREATE TABLE labels (
   user_id bigint NOT NULL,
   name varchar(255) NOT NULL,
   color varchar(255) NOT NULL,
-  created_at timestamp NOT NULL DEFAULT NOW(),
-  updated_at timestamp NOT NULL DEFAULT NOW(),
+  created_at timestamp NOT NULL DEFAULT now(),
+  updated_at timestamp NOT NULL DEFAULT now(),
   PRIMARY KEY (id),
   FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
   UNIQUE (user_id, name)
@@ -117,25 +117,23 @@ CREATE TABLE reminders (
   user_id bigint NOT NULL,
   task_id bigint NOT NULL,
   due due NOT NULL,
-  created_at timestamp NOT NULL DEFAULT NOW(),
-  updated_at timestamp NOT NULL DEFAULT NOW(),
+  created_at timestamp NOT NULL DEFAULT now(),
+  updated_at timestamp NOT NULL DEFAULT now(),
   PRIMARY KEY (id),
   FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
   FOREIGN KEY (task_id) REFERENCES tasks (id) ON DELETE CASCADE
 );
 
-CREATE TYPE object_type AS ENUM('label', 'project', 'reminder', 'task', 'user');
+CREATE TYPE object_type AS enum('label', 'project', 'reminder', 'task', 'user');
 
-CREATE TYPE operation AS ENUM('delete', 'create', 'update');
-
-CREATE TABLE sync_status (
+CREATE TABLE deletion_log (
   id bigserial,
   user_id bigint NOT NULL,
-  object_id bigint NOT NULL,
   object_type object_type NOT NULL,
-  operation operation NOT NULL,
-  token uuid NOT NULL DEFAULT gen_random_uuid (),
-  created_at timestamp NOT NULL DEFAULT NOW(),
+  object_id bigint NOT NULL,
+  deleted_at timestamp NOT NULL DEFAULT now(),
   PRIMARY KEY (id),
-  UNIQUE (token)
+  FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
+
+CREATE INDEX deletion_log_deleted_at_idx ON deletion_log (deleted_at);

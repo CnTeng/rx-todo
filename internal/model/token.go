@@ -3,17 +3,12 @@ package model
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"time"
 )
 
 type Token struct {
-	ID     int64  `json:"id"`
+	Resource
 	UserID int64  `json:"user_id"`
 	Token  string `json:"token"`
-
-	// Meta fields
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type CreateTokenRequest struct {
