@@ -277,18 +277,14 @@ func (db *DB) UpdateTask(task *model.Task) (*model.Task, error) {
 }
 
 func (db *DB) DeleteTask(task *model.Task) error {
-	return db.withTx(
-		func(tx *sql.Tx) error {
-			if _, err := db.Exec(deleteTaskQuery, task.ID, task.UserID); err != nil {
-				return fmt.Errorf("failed to delete task: %w", err)
-			}
-			return nil
-		},
-		func(tx *sql.Tx) error {
-			if _, err := tx.Exec(createDeletionLogQuery, task.UserID, "task", task.ID); err != nil {
-				return fmt.Errorf("failed to create deletion log: %w", err)
-			}
-			return nil
-		},
-	)
+	return db.withTx(func(tx *sql.Tx) error {
+		if _, err := db.Exec(deleteTaskQuery, task.ID, task.UserID); err != nil {
+			return fmt.Errorf("failed to delete task: %w", err)
+		}
+
+		if _, err := tx.Exec(createDeletionLogQuery, task.UserID, "task", task.ID); err != nil {
+			return fmt.Errorf("failed to create deletion log: %w", err)
+		}
+		return nil
+	})
 }

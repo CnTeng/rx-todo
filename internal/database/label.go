@@ -142,18 +142,14 @@ func (db *DB) UpdateLabel(label *model.Label) (*model.Label, error) {
 }
 
 func (db *DB) DeleteLabel(label *model.Label) error {
-	return db.withTx(
-		func(tx *sql.Tx) error {
-			if _, err := tx.Exec(deleteLabelQuery, label.ID, label.UserID); err != nil {
-				return fmt.Errorf("failed to delete label: %w", err)
-			}
-			return nil
-		},
-		func(tx *sql.Tx) error {
-			if _, err := tx.Exec(createDeletionLogQuery, label.UserID, "label", label.ID); err != nil {
-				return fmt.Errorf("failed to create deletion log: %w", err)
-			}
-			return nil
-		},
-	)
+	return db.withTx(func(tx *sql.Tx) error {
+		if _, err := tx.Exec(deleteLabelQuery, label.ID, label.UserID); err != nil {
+			return fmt.Errorf("failed to delete label: %w", err)
+		}
+
+		if _, err := tx.Exec(createDeletionLogQuery, label.UserID, "label", label.ID); err != nil {
+			return fmt.Errorf("failed to create deletion log: %w", err)
+		}
+		return nil
+	})
 }

@@ -48,9 +48,7 @@ func (db *DB) Migrate() error {
 	return nil
 }
 
-type txFunc func(tx *sql.Tx) error
-
-func (db *DB) withTx(fns ...txFunc) error {
+func (db *DB) withTx(fn func(tx *sql.Tx) error) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -64,10 +62,8 @@ func (db *DB) withTx(fns ...txFunc) error {
 		}
 	}()
 
-	for _, fn := range fns {
-		if err := fn(tx); err != nil {
-			return err
-		}
+	if err := fn(tx); err != nil {
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {

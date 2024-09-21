@@ -39,50 +39,46 @@ var (
 )
 
 func (db *DB) CreateProject(project *model.Project) (*model.Project, error) {
-	return project, db.withTx(
-		func(tx *sql.Tx) error {
-			rows, err := tx.Query(
-				updateProjectOrderQuery,
-				project.UserID,
-				project.ParentID,
-				project.ChildOrder,
-			)
-			if err != nil {
-				return fmt.Errorf("failed to update project order: %w", err)
-			}
-			defer rows.Close()
+	return project, db.withTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(
+			updateProjectOrderQuery,
+			project.UserID,
+			project.ParentID,
+			project.ChildOrder,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to update project order: %w", err)
+		}
+		defer rows.Close()
 
-			for rows.Next() {
-				var id int64
-				if err := rows.Scan(&id); err != nil {
-					return fmt.Errorf("failed to scan project id: %w", err)
-				}
+		for rows.Next() {
+			var id int64
+			if err := rows.Scan(&id); err != nil {
+				return fmt.Errorf("failed to scan project id: %w", err)
 			}
+		}
 
-			return nil
-		},
-		func(tx *sql.Tx) error {
-			if err := tx.QueryRow(
-				createProjectQuery,
-				project.UserID,
-				project.Content,
-				project.Description,
-				project.ParentID,
-				project.ChildOrder,
-				project.Favorite,
-			).Scan(
-				&project.ID,
-				&project.Inbox,
-				&project.Archived,
-				&project.ArchivedAt,
-				&project.CreatedAt,
-				&project.UpdatedAt,
-			); err != nil {
-				return fmt.Errorf("failed to create project: %w", err)
-			}
+		if err := tx.QueryRow(
+			createProjectQuery,
+			project.UserID,
+			project.Content,
+			project.Description,
+			project.ParentID,
+			project.ChildOrder,
+			project.Favorite,
+		).Scan(
+			&project.ID,
+			&project.Inbox,
+			&project.Archived,
+			&project.ArchivedAt,
+			&project.CreatedAt,
+			&project.UpdatedAt,
+		); err != nil {
+			return fmt.Errorf("failed to create project: %w", err)
+		}
 
-			return nil
-		})
+		return nil
+	})
 }
 
 func (db *DB) GetProjectByID(userID, id int64) (*model.Project, error) {
@@ -243,18 +239,14 @@ func (db *DB) DeleteProject(project *model.Project) error {
 		return fmt.Errorf("failed to delete inbox")
 	}
 
-	return db.withTx(
-		func(tx *sql.Tx) error {
-			if _, err := tx.Exec(deleteProjectQuery, project.ID, project.UserID); err != nil {
-				return fmt.Errorf("failed to delete project: %w", err)
-			}
-			return nil
-		},
-		func(tx *sql.Tx) error {
-			if _, err := tx.Exec(createDeletionLogQuery, project.UserID, "project", project.ID); err != nil {
-				return fmt.Errorf("failed to create deletion log: %w", err)
-			}
-			return nil
-		},
-	)
+	return db.withTx(func(tx *sql.Tx) error {
+		if _, err := tx.Exec(deleteProjectQuery, project.ID, project.UserID); err != nil {
+			return fmt.Errorf("failed to delete project: %w", err)
+		}
+
+		if _, err := tx.Exec(createDeletionLogQuery, project.UserID, "project", project.ID); err != nil {
+			return fmt.Errorf("failed to create deletion log: %w", err)
+		}
+		return nil
+	})
 }

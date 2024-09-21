@@ -161,18 +161,14 @@ func (db *DB) UpdateReminder(reminder *model.Reminder) (*model.Reminder, error) 
 }
 
 func (db *DB) DeleteReminder(reminder *model.Reminder) error {
-	return db.withTx(
-		func(tx *sql.Tx) error {
-			if _, err := tx.Exec(deleteReminderQuery, reminder.ID, reminder.UserID); err != nil {
-				return fmt.Errorf("failed to delete reminder: %w", err)
-			}
-			return nil
-		},
-		func(tx *sql.Tx) error {
-			if _, err := tx.Exec(createDeletionLogQuery, reminder.UserID, "reminder", reminder.ID); err != nil {
-				return fmt.Errorf("failed to create deletion log: %w", err)
-			}
-			return nil
-		},
-	)
+	return db.withTx(func(tx *sql.Tx) error {
+		if _, err := tx.Exec(deleteReminderQuery, reminder.ID, reminder.UserID); err != nil {
+			return fmt.Errorf("failed to delete reminder: %w", err)
+		}
+
+		if _, err := tx.Exec(createDeletionLogQuery, reminder.UserID, "reminder", reminder.ID); err != nil {
+			return fmt.Errorf("failed to create deletion log: %w", err)
+		}
+		return nil
+	})
 }
