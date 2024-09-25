@@ -28,8 +28,20 @@ var (
 	//go:embed sql/task_get_by_updated_at.sql
 	getTasksByUpdateTimeQuery string
 
+	//go:embed sql/task_get_next_order_by_project_id.sql
+	getTaskNextOrderQueryByProjectID string
+
+	//go:embed sql/task_get_next_order_by_parent_id.sql
+	getTaskNextOrderQueryByParentID string
+
 	//go:embed sql/task_update.sql
 	updateTaskQuery string
+
+	//go:embed sql/task_update_done.sql
+	updateTaskDoneQuery string
+
+	//go:embed sql/task_update_archived.sql
+	updateTaskArchivedQuery string
 
 	//go:embed sql/task_delete.sql
 	deleteTaskQuery string
@@ -52,6 +64,24 @@ func (db *DB) CreateTask(task *model.Task) (*model.Task, error) {
 	}
 
 	return task, db.withTx(func(tx *sql.Tx) error {
+		if task.ParentID != nil {
+			if err := tx.QueryRow(
+				getTaskNextOrderQueryByParentID,
+				task.UserID,
+				task.ParentID,
+			).Scan(&task.ChildOrder); err != nil {
+				return fmt.Errorf("failed to get task child_order by parent_id: %w", err)
+			}
+		} else {
+			if err := tx.QueryRow(
+				getTaskNextOrderQueryByProjectID,
+				task.UserID,
+				task.ProjectID,
+			).Scan(&task.ChildOrder); err != nil {
+				return fmt.Errorf("failed to get task child_order by project_id: %w", err)
+			}
+		}
+
 		if err := tx.QueryRow(
 			createTaskQuery,
 			task.UserID,
@@ -63,6 +93,7 @@ func (db *DB) CreateTask(task *model.Task) (*model.Task, error) {
 			durationUnit,
 			task.Priority,
 			task.ProjectID,
+			task.ParentID,
 			task.ChildOrder,
 		).Scan(&task.ID, &task.CreatedAt, &task.UpdatedAt); err != nil {
 			return fmt.Errorf("failed to create task: %w", err)
@@ -274,6 +305,30 @@ func (db *DB) UpdateTask(task *model.Task) (*model.Task, error) {
 
 		return nil
 	})
+}
+
+func (db *DB) UpdateTaskDoneStatus(task *model.Task) (*model.Task, error) {
+	if err := db.QueryRow(
+		updateTaskDoneQuery,
+		task.ID,
+		task.UserID,
+		task.Done,
+	).Scan(&task.DoneAt); err != nil {
+		return nil, fmt.Errorf("failed to update project done status: %w", err)
+	}
+	return task, nil
+}
+
+func (db *DB) UpdateTaskArchivedStatus(task *model.Task) (*model.Task, error) {
+	if err := db.QueryRow(
+		updateTaskArchivedQuery,
+		task.ID,
+		task.UserID,
+		task.Archived,
+	).Scan(&task.ArchivedAt); err != nil {
+		return nil, fmt.Errorf("failed to update project archived status: %w", err)
+	}
+	return task, nil
 }
 
 func (db *DB) DeleteTask(task *model.Task) error {

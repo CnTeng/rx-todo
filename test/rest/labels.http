@@ -28,7 +28,7 @@ Accept: application/json
 ###
 
 # Delete a label
-DELETE http://localhost:8080/labels/37 HTTP/1.1
+DELETE http://localhost:8080/labels/16 HTTP/1.1
 Authorization: Bearer {{token}}
 Accept: application/json
 

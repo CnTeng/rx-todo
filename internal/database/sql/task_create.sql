@@ -7,6 +7,7 @@ INSERT INTO
     duration,
     priority,
     project_id,
+    parent_id,
     child_order
   )
 VALUES
@@ -18,7 +19,8 @@ VALUES
     ROW ($6, $7),
     $8,
     $9,
-    $10
+    $10,
+    $11
   )
 RETURNING
   id,

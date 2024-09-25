@@ -14,6 +14,10 @@ func (h *handler) registerTaskRoutes() {
 	group.Get(":id", h.getTask)
 	group.Get("", h.getTasks)
 	group.Put(":id", h.updateTask)
+	group.Put(":id/open", h.openTask)
+	group.Put(":id/close", h.closeTask)
+	group.Put(":id/archive", h.archiveTask)
+	group.Put(":id/unarchive", h.unarchiveTask)
 	group.Delete(":id", h.deleteTask)
 }
 
@@ -98,6 +102,130 @@ func (h *handler) updateTask(c *fiber.Ctx) error {
 	}
 
 	task, err = h.UpdateTask(task)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(task)
+}
+
+func (h *handler) openTask(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
+
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	task, err := h.GetTaskByID(userID, id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if !task.Done {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": "task already open"})
+	} else {
+		task.Done = false
+	}
+
+	task, err = h.UpdateTaskDoneStatus(task)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(task)
+}
+
+func (h *handler) closeTask(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
+
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	task, err := h.GetTaskByID(userID, id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if task.Done {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": "task already done"})
+	} else {
+		task.Done = true
+	}
+
+	task, err = h.UpdateTaskDoneStatus(task)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(task)
+}
+
+func (h *handler) archiveTask(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
+
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	task, err := h.GetTaskByID(userID, id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if task.Archived {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": "task already archived"})
+	} else {
+		task.Archived = true
+	}
+
+	task, err = h.UpdateTaskArchivedStatus(task)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(task)
+}
+
+func (h *handler) unarchiveTask(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
+
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	task, err := h.GetTaskByID(userID, id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if !task.Archived {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": "task already unarchived"})
+	} else {
+		task.Archived = false
+	}
+
+	task, err = h.UpdateTaskArchivedStatus(task)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})

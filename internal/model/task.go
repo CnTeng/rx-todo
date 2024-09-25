@@ -38,7 +38,6 @@ type TaskCreationRequest struct {
 	Priority    *int      `json:"priority"`
 	ProjectID   *int64    `json:"project_id,omitempty"`
 	ParentID    *int64    `json:"parent_id,omitempty"`
-	ChildOrder  *int      `json:"child_order"`
 	Labels      *[]string `json:"labels"`
 }
 
@@ -61,6 +60,10 @@ func (r *TaskUpdateRequest) Validate() error {
 		r.ParentID == nil && r.ChildOrder == nil &&
 		r.Labels == nil {
 		return fmt.Errorf("validate: at least one of task attributes should be set")
+	}
+
+	if r.ProjectID != nil && r.ParentID != nil {
+		return fmt.Errorf("validate: only one of project_id or parent_id should be set")
 	}
 
 	return nil
@@ -89,13 +92,11 @@ func (r *TaskCreationRequest) Patch(task *Task) {
 
 	if r.ProjectID != nil {
 		task.ProjectID = r.ProjectID
-	} else if r.ParentID != nil {
-		task.ProjectID = nil
-		task.ParentID = r.ParentID
 	}
 
-	if r.ChildOrder != nil {
-		task.ChildOrder = *r.ChildOrder
+	if r.ParentID != nil {
+		task.ProjectID = nil
+		task.ParentID = r.ParentID
 	}
 
 	if r.Labels != nil {

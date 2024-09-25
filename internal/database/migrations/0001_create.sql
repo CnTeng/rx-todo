@@ -64,6 +64,8 @@ CREATE TABLE tasks (
   FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
   FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,
   FOREIGN KEY (parent_id) REFERENCES tasks (id) ON DELETE CASCADE,
+  UNIQUE (project_id, child_order),
+  UNIQUE (parent_id, child_order)
 );
 
 CREATE TABLE labels (
