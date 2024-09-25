@@ -168,7 +168,14 @@ func (h *handler) archiveProject(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	project, err = h.ArchiveProject(project)
+	if project.Archived {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": "project already archived"})
+	} else {
+		project.Archived = true
+	}
+
+	project, err = h.UpdateProjectStatus(project)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})
@@ -192,7 +199,14 @@ func (h *handler) unarchiveProject(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	project, err = h.UnarchiveProject(project)
+	if !project.Archived {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": "project already unarchived"})
+	} else {
+		project.Archived = false
+	}
+
+	project, err = h.UpdateProjectStatus(project)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})

@@ -22,17 +22,14 @@ var (
 	//go:embed sql/project_get_by_updated_at.sql
 	getProjectsByUpdateTimeQuery string
 
+	//go:embed sql/project_get_next_order.sql
+	getProjectNextOrderQuery string
+
 	//go:embed sql/project_update.sql
 	updateProjectQuery string
 
-	//go:embed sql/project_update_order.sql
-	updateProjectOrderQuery string
-
-	//go:embed sql/project_archive.sql
-	archiveProjectQuery string
-
-	//go:embed sql/project_unarchive.sql
-	unarchiveProjectQuery string
+	//go:embed sql/project_update_status.sql
+	updateProjectStatusQuery string
 
 	//go:embed sql/project_delete.sql
 	deleteProjectQuery string
@@ -40,22 +37,12 @@ var (
 
 func (db *DB) CreateProject(project *model.Project) (*model.Project, error) {
 	return project, db.withTx(func(tx *sql.Tx) error {
-		rows, err := tx.Query(
-			updateProjectOrderQuery,
+		if err := tx.QueryRow(
+			getProjectNextOrderQuery,
 			project.UserID,
 			project.ParentID,
-			project.ChildOrder,
-		)
-		if err != nil {
-			return fmt.Errorf("failed to update project order: %w", err)
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			var id int64
-			if err := rows.Scan(&id); err != nil {
-				return fmt.Errorf("failed to scan project id: %w", err)
-			}
+		).Scan(&project.ChildOrder); err != nil {
+			return fmt.Errorf("failed to get project child_order: %w", err)
 		}
 
 		if err := tx.QueryRow(
@@ -219,16 +206,14 @@ func (db *DB) UpdateProjects(projects []*model.Project) ([]*model.Project, error
 	})
 }
 
-func (db *DB) ArchiveProject(project *model.Project) (*model.Project, error) {
-	if _, err := db.Exec(archiveProjectQuery, project.ID, project.UserID); err != nil {
-		return nil, fmt.Errorf("failed to archive project: %w", err)
-	}
-	return project, nil
-}
-
-func (db *DB) UnarchiveProject(project *model.Project) (*model.Project, error) {
-	if _, err := db.Exec(unarchiveProjectQuery, project.ID, project.UserID); err != nil {
-		return nil, fmt.Errorf("failed to unarchive project: %w", err)
+func (db *DB) UpdateProjectStatus(project *model.Project) (*model.Project, error) {
+	if err := db.QueryRow(
+		updateProjectStatusQuery,
+		project.ID,
+		project.UserID,
+		project.Archived,
+	).Scan(&project.ArchivedAt); err != nil {
+		return nil, fmt.Errorf("failed to update project status: %w", err)
 	}
 	return project, nil
 }

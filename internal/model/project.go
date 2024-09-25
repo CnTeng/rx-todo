@@ -24,7 +24,6 @@ type ProjectCreationRequest struct {
 	Content     *string `json:"content" validate:"required,notempty"`
 	Description *string `json:"description"`
 	ParentID    *int64  `json:"parent_id"`
-	ChildOrder  *int64  `json:"child_order"`
 	Favorite    *bool   `json:"favorite"`
 }
 
@@ -70,10 +69,6 @@ func (r *ProjectCreationRequest) Patch(project *Project) {
 
 	if r.ParentID != nil {
 		project.ParentID = r.ParentID
-	}
-
-	if r.ChildOrder != nil {
-		project.ChildOrder = *r.ChildOrder
 	}
 
 	if r.Favorite != nil {

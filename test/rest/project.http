@@ -7,7 +7,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "content": "Inbox3",
+  "content": "Inbox9",
   "description": ""
 }
 
@@ -56,14 +56,14 @@ Accept: application/json
 ###
 
 # Archive a project
-PUT http://localhost:8080/projects/43/archive HTTP/1.1
+PUT http://localhost:8080/projects/45/archive HTTP/1.1
 Authorization: Bearer {{token}}
 Accept: application/json
 
 ###
 
 # Unarchive a project
-PUT http://localhost:8080/projects/43/unarchive HTTP/1.1
+PUT http://localhost:8080/projects/45/unarchive HTTP/1.1
 Authorization: Bearer {{token}}
 Accept: application/json
 
