@@ -7,13 +7,9 @@ require (
 	github.com/go-playground/validator/v10 v10.22.1
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/lib/pq v1.10.9
+	github.com/rodaine/table v1.3.0
 	github.com/spf13/cobra v1.8.1
 	golang.org/x/crypto v0.27.0
-)
-
-require (
-	github.com/rodaine/table v1.3.0 // indirect
-	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
 )
 
 require (
@@ -24,7 +20,6 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/google/uuid v1.5.0 // indirect
-	github.com/gookit/color v1.5.4
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
