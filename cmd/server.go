@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/CnTeng/rx-todo/internal/database"
-	"github.com/CnTeng/rx-todo/internal/http"
+	"github.com/CnTeng/rx-todo/internal/server"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,7 @@ var serverCmd = &cobra.Command{
 		// 	panic(err)
 		// }
 
-		server := http.NewServer(&db)
+		server := server.NewServer(&db)
 		_ = server.Start()
 	},
 }

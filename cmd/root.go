@@ -1,10 +1,21 @@
 package cmd
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 )
+
+type Config struct {
+	Address string `json:"address"`
+	Token   string `json:"token"`
+}
+
+var cfgFile string
+
+var config Config
 
 var rootCmd = &cobra.Command{
 	Use:     "rx-todo",
@@ -27,5 +38,20 @@ func Execute() {
 }
 
 func init() {
+	cobra.OnInitialize(initConfig)
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is config.json)")
+}
+
+func initConfig() {
+	file, err := os.ReadFile(cfgFile)
+	if err != nil {
+		fmt.Printf("Error opening config file: %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := json.Unmarshal(file, &config); err != nil {
+		fmt.Printf("Error decoding config file: %v\n", err)
+		os.Exit(1)
+	}
 }
