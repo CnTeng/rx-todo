@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/CnTeng/rx-todo/internal/model"
+	"github.com/CnTeng/rx-todo/model"
 	"golang.org/x/crypto/bcrypt"
 )
 

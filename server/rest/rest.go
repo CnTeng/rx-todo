@@ -1,8 +1,8 @@
 package rest
 
 import (
-	"github.com/CnTeng/rx-todo/internal/database"
-	"github.com/CnTeng/rx-todo/internal/model"
+	"github.com/CnTeng/rx-todo/database"
+	"github.com/CnTeng/rx-todo/model"
 	"github.com/gofiber/fiber/v2"
 )
 

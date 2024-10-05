@@ -1,6 +1,8 @@
 package model
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Label represents a label
 type Label struct {
@@ -20,6 +22,11 @@ type LabelCreationRequest struct {
 type LabelUpdateRequest struct {
 	Name  *string `json:"name" validate:"omitnil,notempty"`
 	Color *string `json:"color" validate:"omitnil,hexcolor"`
+}
+
+type LabelUpdateRequestWithID struct {
+	ID int64 `json:"id" validate:"required,notempty"`
+	LabelUpdateRequest
 }
 
 // LabelUpdateRequest at least needs one of name or color to be set

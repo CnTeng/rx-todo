@@ -3,39 +3,54 @@ package client
 import (
 	"encoding/json"
 
-	"github.com/CnTeng/rx-todo/internal/model"
+	"github.com/CnTeng/rx-todo/model"
 )
 
 type Client struct {
-	Endpoint    string
-	Token       string
-	StoragePath string
+	Endpoint string
+	Token    string
+	*storage
 }
 
-func NewClient(server, token, storage string) *Client {
-	return &Client{
-		Endpoint:    server,
-		Token:       token,
-		StoragePath: storage,
-	}
-}
-
-func (c *Client) Sync() (*model.ResourceSyncResponse, error) {
-	request := newRequest(
-		c.Endpoint+"/resources/sync",
-		c.Token,
-		&model.ResourceSyncRequest{})
-
-	response, err := request.post()
+func NewClient(server, token, storagePath string) (*Client, error) {
+	storage, err := newStorage(storagePath)
 	if err != nil {
 		return nil, err
 	}
+
+	return &Client{
+		Endpoint: server,
+		Token:    token,
+		storage:  storage,
+	}, nil
+}
+
+func (c *Client) Sync() error {
+	request := newRequest(
+		c.Endpoint,
+		c.Token,
+		&model.ResourceSyncRequest{},
+	)
+
+	response, err := request.withPath("resources/sync").post()
+	if err != nil {
+		return err
+	}
 	defer response.Close()
 
-	var resource model.ResourceSyncResponse
-	if err := json.NewDecoder(response).Decode(&resource); err != nil {
-		return nil, err
+	if err := json.NewDecoder(response).Decode(&c.Resources); err != nil {
+		return err
 	}
 
-	return &resource, nil
+	return c.save()
+}
+
+func (c *Client) patch(res any) error {
+	if err := c.load(); err != nil {
+		return err
+	}
+
+	c.storage.patch(res)
+
+	return c.save()
 }

@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"github.com/CnTeng/rx-todo/internal/model"
+	"github.com/CnTeng/rx-todo/model"
 	"github.com/fatih/color"
 )
 
@@ -29,10 +29,10 @@ func (s *status) String() string {
 	}
 }
 
-func NewStatusMap(res []*model.Resource, status status) *StatusMap {
+func NewStatusMap[T model.Syncable](res []T, status status) *StatusMap {
 	sm := make(StatusMap, len(res))
 	for _, r := range res {
-		sm[r.ID] = status
+		sm[r.GetID()] = status
 	}
 	return &sm
 }

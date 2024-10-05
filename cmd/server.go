@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/CnTeng/rx-todo/internal/database"
-	"github.com/CnTeng/rx-todo/internal/server"
+	"github.com/CnTeng/rx-todo/database"
+	"github.com/CnTeng/rx-todo/server"
 	"github.com/spf13/cobra"
 )
 

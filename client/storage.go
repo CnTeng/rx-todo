@@ -2,74 +2,80 @@ package client
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 
-	"github.com/CnTeng/rx-todo/internal/model"
+	"github.com/CnTeng/rx-todo/model"
 	"github.com/adrg/xdg"
 )
 
 type storage struct {
 	Path string
+	*model.Resources
 }
 
-func NewStorage(path string) (*storage, error) {
+func newStorage(path string) (*storage, error) {
 	path, err := xdg.CacheFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	return &storage{Path: path}, nil
+	return &storage{
+		Path:      path,
+		Resources: model.NewResources(),
+	}, nil
 }
 
-func (c *Client) Store(resource *model.ResourceSyncResponse) error {
-	file, err := json.MarshalIndent(resource, "", "  ")
+func (s *storage) load() error {
+	file, err := os.ReadFile(s.Path)
 	if err != nil {
 		return err
 	}
 
-	if err := os.WriteFile(c.StoragePath, file, 0o644); err != nil {
+	if err := json.Unmarshal(file, s); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func pathLabel(res *model.ResourceSyncResponse, labels []*model.Label) {
-	labelMap := make(map[int64]*model.Label)
-	for _, rl := range *res.Labels {
-		labelMap[rl.ID] = rl
+func (s *storage) save() error {
+	file, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		return err
 	}
 
-	for _, l := range labels {
-		labelMap[l.ID] = l
+	if err := os.WriteFile(s.Path, file, 0o644); err != nil {
+		return err
 	}
 
-	updatedLabels := make([]*model.Label, 0, len(labelMap))
-	for _, label := range labelMap {
-		updatedLabels = append(updatedLabels, label)
-	}
-
-	*res.Labels = updatedLabels
+	return nil
 }
 
-func (c *Client) Patch(res any) (*model.ResourceSyncResponse, error) {
-	resources := &model.ResourceSyncResponse{}
-	file, err := os.ReadFile(c.StoragePath)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := json.Unmarshal(file, resources); err != nil {
-		return nil, err
-	}
-
+func (s *storage) patch(res any) {
 	switch res := res.(type) {
+	case *model.Label:
+		s.Labels[res.ID] = res
 	case []*model.Label:
-		pathLabel(resources, res)
-	default:
-		return nil, fmt.Errorf("unsupported type")
+		for _, label := range res {
+			s.Labels[label.ID] = label
+		}
+	case *model.Project:
+		s.Projects[res.ID] = res
+	case []*model.Project:
+		for _, project := range res {
+			s.Projects[project.ID] = project
+		}
+	case *model.Reminder:
+		s.Reminders[res.ID] = res
+	case []*model.Reminder:
+		for _, reminder := range res {
+			s.Reminders[reminder.ID] = reminder
+		}
+	case *model.Task:
+		s.Tasks[res.ID] = res
+	case []*model.Task:
+		for _, task := range res {
+			s.Tasks[task.ID] = task
+		}
 	}
-
-	return resources, c.Store(resources)
 }

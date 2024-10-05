@@ -1,9 +1,9 @@
 package server
 
 import (
-	"github.com/CnTeng/rx-todo/internal/api/rest"
-	"github.com/CnTeng/rx-todo/internal/database"
-	"github.com/CnTeng/rx-todo/internal/server/middleware"
+	"github.com/CnTeng/rx-todo/database"
+	"github.com/CnTeng/rx-todo/server/middleware"
+	"github.com/CnTeng/rx-todo/server/rest"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"

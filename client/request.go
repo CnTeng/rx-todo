@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/CnTeng/rx-todo/internal/model"
+	"github.com/CnTeng/rx-todo/model"
 )
 
 type request struct {
@@ -75,7 +75,7 @@ func (r *request) execute(method string) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	if response.StatusCode != http.StatusNoContent {
+	if response.StatusCode == http.StatusNoContent {
 		response.Body.Close()
 		return nil, nil
 	}
@@ -87,7 +87,7 @@ func (r *request) execute(method string) (io.ReadCloser, error) {
 			return nil, err
 		}
 		response.Body.Close()
-		return nil, errResp.ToError()
+		return nil, errResp.Error()
 	}
 
 	return response.Body, nil

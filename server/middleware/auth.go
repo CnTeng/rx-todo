@@ -3,7 +3,7 @@ package middleware
 import (
 	"strings"
 
-	"github.com/CnTeng/rx-todo/internal/database"
+	"github.com/CnTeng/rx-todo/database"
 	"github.com/gofiber/fiber/v2"
 )
 

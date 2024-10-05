@@ -1,27 +1,75 @@
 package cli
 
 import (
-	"fmt"
 	"strings"
+	"unicode/utf8"
 
-	"github.com/CnTeng/rx-todo/internal/model"
+	"github.com/CnTeng/rx-todo/model"
+	"github.com/acarl005/stripansi"
 	"github.com/fatih/color"
+	"github.com/rodaine/table"
 )
 
 type TaskSlice []*model.Task
 
-func (ts *TaskSlice) List() string {
+func (ts *TaskSlice) List(s *StatusMap) string {
 	var builder strings.Builder
+	var tbl table.Table
+	hasStatus := false
+	var doneIcon string
 
-	donePrint := color.New(color.CrossedOut).SprintFunc()
+	if s != nil {
+		hasStatus = true
+		tbl = table.New(" ", " ", "ID", "Content", "Description", "Priority", "Labels")
+	} else {
+		tbl = table.New(" ", "ID", "Content", "Description", "Priority", "Labels")
+	}
+
+	tbl.WithWriter(&builder).
+		WithHeaderFormatter(color.New(color.FgGreen, color.Underline).SprintfFunc()).
+		WithWidthFunc(func(s string) int {
+			return utf8.RuneCountInString(stripansi.Strip(s))
+		})
 
 	for _, t := range *ts {
-		if t.Done {
-			builder.WriteString(fmt.Sprintf("%s %s\n", color.GreenString(" "), donePrint(t.Content)))
+		if hasStatus {
+			status := (*s)[t.ID]
+			if t.Done {
+				doneIcon = color.New(color.FgGreen).Sprint(" ")
+			} else {
+				doneIcon = " "
+			}
+
+			tbl.AddRow(
+				status.String(),
+				doneIcon,
+				color.New(color.FgYellow).Sprint(t.ID),
+				t.Content,
+				t.Description,
+				t.Priority,
+				strings.Join(t.Labels, ", "),
+			)
 		} else {
-			builder.WriteString(fmt.Sprintf("%s %s\n", " ", t.Content))
+			if t.Done {
+				doneIcon = color.New(color.FgGreen).Sprint(" ")
+			} else {
+				doneIcon = " "
+			}
+
+			tbl.AddRow(
+				doneIcon,
+				color.New(color.FgYellow).Sprint(t.ID),
+				t.Content,
+				t.Description,
+				t.Priority,
+				strings.Join(t.Labels, ", "),
+			)
 		}
 	}
+
+	builder.WriteString("\n")
+	tbl.Print()
+	builder.WriteString("\n")
 
 	return builder.String()
 }

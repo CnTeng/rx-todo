@@ -3,7 +3,7 @@ package rest
 import (
 	"strconv"
 
-	"github.com/CnTeng/rx-todo/internal/model"
+	"github.com/CnTeng/rx-todo/model"
 	"github.com/gofiber/fiber/v2"
 )
 
