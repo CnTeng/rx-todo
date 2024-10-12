@@ -17,6 +17,11 @@ var cfgFile string
 
 var config Config
 
+const (
+	network    = "unix"
+	socketPath = "@rx-todo.sock"
+)
+
 var rootCmd = &cobra.Command{
 	Use:     "rx-todo",
 	Aliases: []string{"todo", "rt"},
@@ -41,6 +46,19 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is config.json)")
+}
+
+func getValue[T any](cmd *cobra.Command, getter func(string) (T, error), name string) *T {
+	if !cmd.Flags().Changed(name) {
+		return nil
+	}
+
+	v, err := getter(name)
+	if err != nil {
+		cobra.CheckErr(err)
+	}
+
+	return &v
 }
 
 func initConfig() {

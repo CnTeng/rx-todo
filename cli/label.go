@@ -2,7 +2,6 @@ package cli
 
 import (
 	"sort"
-	"strings"
 	"unicode/utf8"
 
 	"github.com/CnTeng/rx-todo/model"
@@ -13,61 +12,57 @@ import (
 
 type LabelSlice []*model.Label
 
-func (ls LabelSlice) Len() int {
-	return len(ls)
-}
-
-func (ls LabelSlice) Less(i, j int) bool {
-	return ls[i].ID < ls[j].ID
-}
-
-func (ls LabelSlice) Swap(i, j int) {
-	ls[i], ls[j] = ls[j], ls[i]
-}
-
-func (ls *LabelSlice) List(s *StatusMap) string {
-	var builder strings.Builder
-	var tbl table.Table
-	hasStatus := false
-
-	if s != nil {
-		hasStatus = true
-		tbl = table.New(" ", "ID", "Label", "Color", "Updated At")
-	} else {
-		tbl = table.New("ID", "Label", "Color", "Updated At")
+func (ls *LabelSlice) GetIDs() *[]int64 {
+	ids := make([]int64, 0, len(*ls))
+	for _, l := range *ls {
+		ids = append(ids, l.ID)
 	}
+	return &ids
+}
 
-	sort.Sort(ls)
+func (ls *LabelSlice) SortByID() *LabelSlice {
+	sort.Slice(*ls, func(i, j int) bool {
+		return (*ls)[i].ID < (*ls)[j].ID
+	})
+	return ls
+}
 
-	tbl.WithWriter(&builder).
+func (ls *LabelSlice) SortByName() *LabelSlice {
+	sort.Slice(*ls, func(i, j int) bool {
+		return (*ls)[i].Name < (*ls)[j].Name
+	})
+	return ls
+}
+
+func (c *cli) ListLabels(ls *LabelSlice, sm *statusMap) {
+	headers := make([]any, 0, 4)
+
+	if sm != nil {
+		headers = append(headers, " ")
+	}
+	headers = append(headers, "ID", "Label", "Color")
+
+	tbl := table.New(headers...).
 		WithHeaderFormatter(color.New(color.FgGreen, color.Underline).SprintfFunc()).
 		WithWidthFunc(func(s string) int {
 			return utf8.RuneCountInString(stripansi.Strip(s))
 		})
 
-	for _, c := range *ls {
-		if hasStatus {
-			status := (*s)[c.ID]
-			tbl.AddRow(
-				status.String(),
-				color.New(color.FgYellow).Sprint(c.ID),
-				c.Name,
-				BgHexRGB(c.Color).Sprint(c.Color),
-				c.UpdatedAt.Format("2006-01-02 15:04:05"),
-			)
-		} else {
-			tbl.AddRow(
-				color.New(color.FgYellow).Sprint(c.ID),
-				c.Name,
-				BgHexRGB(c.Color).Sprint(c.Color),
-				c.UpdatedAt.Format("2006-01-02 15:04:05"),
-			)
+	for _, l := range *ls {
+		vals := make([]any, 0, 4)
+		if sm != nil {
+			vals = append(vals, sm.getStatusIcon(l.ID, c.iconType))
 		}
+
+		vals = append(
+			vals,
+			color.New(color.FgYellow).Sprint(l.ID),
+			l.Name,
+			BgHexRGB(l.Color).Sprint(l.Color),
+		)
+
+		tbl.AddRow(vals...)
 	}
 
-	builder.WriteString("\n")
 	tbl.Print()
-	builder.WriteString("\n")
-
-	return builder.String()
 }

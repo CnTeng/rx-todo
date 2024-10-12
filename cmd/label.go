@@ -9,12 +9,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	id    int64
-	name  string
-	color string
-)
-
 var labelCmd = &cobra.Command{
 	Use:   "label",
 	Short: "list all labels",
@@ -26,7 +20,7 @@ var labelCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		cmd.Print(labels.List(nil))
+		cli.NewCLI(cli.Nerd).ListLabels(&labels, nil)
 	},
 }
 
@@ -35,11 +29,15 @@ var labelAddCmd = &cobra.Command{
 	Aliases: []string{"a"},
 	Short:   "add new label",
 	Run: func(cmd *cobra.Command, args []string) {
+		request := &model.LabelCreationRequest{
+			Name:  getValue(cmd, cmd.Flags().GetString, "name"),
+			Color: getValue(cmd, cmd.Flags().GetString, "color"),
+		}
+
 		c := rpc.NewClient("unix", "/tmp/rx-todo.sock", 5*time.Second)
 
-		labelCreationRequest := &model.LabelCreationRequest{Name: name, Color: color}
 		label := &model.Label{}
-		if err := c.Call("Label.Create", labelCreationRequest, label); err != nil {
+		if err := c.Call("Label.Create", request, label); err != nil {
 			cobra.CheckErr(err)
 		}
 		sm := cli.NewStatusMap([]*model.Label{label}, cli.Add)
@@ -49,7 +47,7 @@ var labelAddCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		cmd.Print(labels.List(sm))
+		cli.NewCLI(cli.Nerd).ListLabels(&labels, sm)
 	},
 }
 
@@ -61,19 +59,16 @@ var labelModifyCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		c := rpc.NewClient("unix", "/tmp/rx-todo.sock", 5*time.Second)
 
-		labelUpdateRequest := &model.LabelUpdateRequestWithID{
-			ID: id,
-			LabelUpdateRequest: model.LabelUpdateRequest{
-				Name:  &name,
-				Color: &color,
+		request := &model.LabelUpdateRequestWithID{
+			ID: getValue(cmd, cmd.Flags().GetInt64, "id"),
+			LabelUpdateRequest: &model.LabelUpdateRequest{
+				Name:  getValue(cmd, cmd.Flags().GetString, "name"),
+				Color: getValue(cmd, cmd.Flags().GetString, "color"),
 			},
-		}
-		if err := model.Validate(labelUpdateRequest); err != nil {
-			cobra.CheckErr(err)
 		}
 
 		label := &model.Label{}
-		if err := c.Call("Label.Update", labelUpdateRequest, &label); err != nil {
+		if err := c.Call("Label.Update", request, &label); err != nil {
 			cobra.CheckErr(err)
 		}
 		sm := cli.NewStatusMap([]*model.Label{label}, cli.Change)
@@ -83,7 +78,7 @@ var labelModifyCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		cmd.Print(labels.List(sm))
+		cli.NewCLI(cli.Nerd).ListLabels(&labels, sm)
 	},
 }
 
@@ -91,11 +86,11 @@ func init() {
 	rootCmd.AddCommand(labelCmd)
 
 	labelCmd.AddCommand(labelAddCmd)
-	labelAddCmd.Flags().StringVarP(&name, "name", "n", "", "name of the label")
-	labelAddCmd.Flags().StringVarP(&color, "color", "c", "", "color of the label")
+	labelAddCmd.Flags().StringP("name", "n", "", "name of the label")
+	labelAddCmd.Flags().StringP("color", "c", "", "color of the label")
 
 	labelCmd.AddCommand(labelModifyCmd)
-	labelModifyCmd.Flags().Int64VarP(&id, "id", "i", 0, "ID of the label")
-	labelModifyCmd.Flags().StringVarP(&name, "name", "n", "", "name of the label")
-	labelModifyCmd.Flags().StringVarP(&color, "color", "c", "", "color of the label")
+	labelModifyCmd.Flags().Int64P("id", "i", 0, "ID of the label")
+	labelModifyCmd.Flags().StringP("name", "n", "", "name of the label")
+	labelModifyCmd.Flags().StringP("color", "c", "", "color of the label")
 }

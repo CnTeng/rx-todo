@@ -13,7 +13,7 @@ type Duration struct {
 }
 
 type Task struct {
-	Resource
+	resource
 	UserID      int64          `json:"user_id"`
 	Content     string         `json:"content"`
 	Description string         `json:"description"`
@@ -30,29 +30,42 @@ type Task struct {
 	ArchivedAt  *time.Time     `json:"archived_at,omitempty"`
 }
 
+// TaskCreationRequest represents a request to create a task
 type TaskCreationRequest struct {
-	Content     *string   `json:"content" validate:"required,notempty"`
-	Description *string   `json:"description"`
-	Due         *Due      `json:"due,omitempty"`
-	Duration    *Duration `json:"duration,omitempty"`
-	Priority    *int      `json:"priority"`
-	ProjectID   *int64    `json:"project_id,omitempty"`
-	ParentID    *int64    `json:"parent_id,omitempty"`
-	Labels      *[]string `json:"labels"`
+	Content     *string   `json:"content"       toml:"content"     validate:"required,notempty"`
+	Description *string   `json:"description"   toml:"description"`
+	Due         *Due      `json:"due,omitempty" toml:"due"`
+	Duration    *Duration `json:"duration"      toml:"duration"`
+	Priority    *int      `json:"priority"      toml:"priority"`
+	ProjectID   *int64    `json:"project_id"    toml:"project_id"`
+	ParentID    *int64    `json:"parent_id"     toml:"parent_id"`
+	Labels      *[]string `json:"labels"        toml:"labels"`
 }
 
+// TaskUpdateRequest represents a request to update a task
 type TaskUpdateRequest struct {
-	Content     *string   `json:"content"`
-	Description *string   `json:"description"`
-	Due         *Due      `json:"due"`
-	Duration    *Duration `json:"duration"`
-	Priority    *int      `json:"priority"`
-	ProjectID   *int64    `json:"project_id"`
-	ParentID    *int64    `json:"parent_id"`
-	ChildOrder  *int      `json:"child_order"`
-	Labels      *[]string `json:"labels"`
+	Content     *string   `json:"content"     toml:"content"`
+	Description *string   `json:"description" toml:"description"`
+	Due         *Due      `json:"due"         toml:"due"`
+	Duration    *Duration `json:"duration"    toml:"duration"`
+	Priority    *int      `json:"priority"    toml:"priority"`
+	ProjectID   *int64    `json:"project_id"  toml:"project_id"`
+	ParentID    *int64    `json:"parent_id"   toml:"parent_id"`
+	ChildOrder  *int      `json:"child_order" toml:"child_order"`
+	Labels      *[]string `json:"labels"      toml:"labels"`
 }
 
+// TaskUpdateRequestWithID represents a request to update a task with an ID
+type TaskUpdateRequestWithID struct {
+	ID int64 `json:"id" validate:"required,notempty"`
+	TaskUpdateRequest
+}
+
+type TaskDeleteRequestWithID struct {
+	ID int64 `json:"id" validate:"required,notempty"`
+}
+
+// TaskUpdateRequest at least needs one of task attributes to be set
 func (r *TaskUpdateRequest) Validate() error {
 	if r.Content == nil && r.Description == nil &&
 		r.Due == nil && r.Duration == nil &&

@@ -10,7 +10,7 @@ var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "start daemon",
 	Run: func(cmd *cobra.Command, args []string) {
-		socketPath := "/tmp/rx-todo.sock"
+		socketPath := "@rx-todo.sock"
 
 		c, err := client.NewClient(config.Address, config.Token, "rx-todo/resources.json")
 		if err != nil {

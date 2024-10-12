@@ -72,10 +72,18 @@ func (s *storage) patch(res any) {
 			s.Reminders[reminder.ID] = reminder
 		}
 	case *model.Task:
-		s.Tasks[res.ID] = res
+		if res.Deleted {
+			delete(s.Tasks, res.ID)
+		} else {
+			s.Tasks[res.ID] = res
+		}
 	case []*model.Task:
 		for _, task := range res {
-			s.Tasks[task.ID] = task
+			if task.Deleted {
+				delete(s.Tasks, task.ID)
+			} else {
+				s.Tasks[task.ID] = task
+			}
 		}
 	}
 }

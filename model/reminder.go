@@ -2,7 +2,7 @@ package model
 
 // Reminder represents a reminder
 type Reminder struct {
-	Resource
+	resource
 	UserID int64 `json:"user_id"`
 	TaskID int64 `json:"task_id"`
 	Due    Due   `json:"due"`

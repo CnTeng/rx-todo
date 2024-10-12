@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"cmp"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -12,64 +14,74 @@ import (
 
 type TaskSlice []*model.Task
 
-func (ts *TaskSlice) List(s *StatusMap) string {
-	var builder strings.Builder
-	var tbl table.Table
-	hasStatus := false
-	var doneIcon string
+func (ts *TaskSlice) SortByID() *TaskSlice {
+	slices.SortStableFunc(*ts, func(a, b *model.Task) int {
+		return cmp.Compare(a.ID, b.ID)
+	})
+	return ts
+}
 
-	if s != nil {
-		hasStatus = true
-		tbl = table.New(" ", " ", "ID", "Content", "Description", "Priority", "Labels")
-	} else {
-		tbl = table.New(" ", "ID", "Content", "Description", "Priority", "Labels")
+func (ts *TaskSlice) SortByName() *TaskSlice {
+	slices.SortStableFunc(*ts, func(a, b *model.Task) int {
+		return cmp.Compare(a.Content, b.Content)
+	})
+	return ts
+}
+
+func (ts *TaskSlice) Filter(f func(*model.Task) bool) *TaskSlice {
+	filtered := make(TaskSlice, 0)
+	for _, t := range *ts {
+		if f(t) {
+			filtered = append(filtered, t)
+		}
 	}
+	return &filtered
+}
 
-	tbl.WithWriter(&builder).
+func (ts *TaskSlice) FilterByName(name string) *TaskSlice {
+	return ts.Filter(func(t *model.Task) bool {
+		return t.Content == name
+	})
+}
+
+func (c *cli) ListTasks(ts *TaskSlice, sm *statusMap) {
+	icons := getIcons(c.iconType)
+	headers := make([]any, 0, 7)
+
+	if sm != nil {
+		headers = append(headers, " ")
+	}
+	headers = append(headers, " ", "ID", "Content", "Description", "Priority", "Labels")
+
+	tbl := table.New(headers...).
 		WithHeaderFormatter(color.New(color.FgGreen, color.Underline).SprintfFunc()).
 		WithWidthFunc(func(s string) int {
 			return utf8.RuneCountInString(stripansi.Strip(s))
 		})
 
 	for _, t := range *ts {
-		if hasStatus {
-			status := (*s)[t.ID]
-			if t.Done {
-				doneIcon = color.New(color.FgGreen).Sprint(" ")
-			} else {
-				doneIcon = " "
-			}
-
-			tbl.AddRow(
-				status.String(),
-				doneIcon,
-				color.New(color.FgYellow).Sprint(t.ID),
-				t.Content,
-				t.Description,
-				t.Priority,
-				strings.Join(t.Labels, ", "),
-			)
-		} else {
-			if t.Done {
-				doneIcon = color.New(color.FgGreen).Sprint(" ")
-			} else {
-				doneIcon = " "
-			}
-
-			tbl.AddRow(
-				doneIcon,
-				color.New(color.FgYellow).Sprint(t.ID),
-				t.Content,
-				t.Description,
-				t.Priority,
-				strings.Join(t.Labels, ", "),
-			)
+		vals := make([]any, 0, 7)
+		if sm != nil {
+			vals = append(vals, sm.getStatusIcon(t.ID, c.iconType))
 		}
+
+		if t.Done {
+			vals = append(vals, color.New(color.FgGreen).Sprint(icons.done))
+		} else {
+			vals = append(vals, icons.undone)
+		}
+
+		vals = append(
+			vals,
+			color.New(color.FgYellow).Sprint(t.ID),
+			t.Content,
+			t.Description,
+			t.Priority,
+			strings.Join(t.Labels, ", "),
+		)
+
+		tbl.AddRow(vals...)
 	}
 
-	builder.WriteString("\n")
 	tbl.Print()
-	builder.WriteString("\n")
-
-	return builder.String()
 }

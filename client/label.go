@@ -36,7 +36,7 @@ func (c *Client) GetLabels() []*model.Label {
 func (c *Client) UpdateLabel(r *model.LabelUpdateRequestWithID) (*model.Label, error) {
 	request := newRequest(c.Endpoint, c.Token, r.LabelUpdateRequest)
 
-	response, err := request.withPath("labels").withID(r.ID).put()
+	response, err := request.withPath("labels").withID(*r.ID).put()
 	if err != nil {
 		return nil, err
 	}
@@ -54,13 +54,19 @@ func (c *Client) UpdateLabel(r *model.LabelUpdateRequestWithID) (*model.Label, e
 	return label, nil
 }
 
-func (c *Client) DeleteLabel(id int64) error {
+func (c *Client) DeleteLabel(id int64) (*model.Label, error) {
 	request := newRequest(c.Endpoint, c.Token, nil)
 
-	_, err := request.withPath("labels").withID(id).delete()
-	if err != nil {
-		return err
+	if _, err := request.withPath("labels").withID(id).delete(); err != nil {
+		return nil, err
 	}
 
-	return nil
+	label := c.GetLabel(id)
+	label.Deleted = true
+
+	if err := c.patch([]*model.Label{label}); err != nil {
+		return nil, err
+	}
+
+	return label, nil
 }

@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-type Resource struct {
+type resource struct {
 	ID int64 `json:"id"`
 
 	// Meta fields
@@ -11,16 +11,16 @@ type Resource struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type Syncable interface {
+type Resource interface {
 	GetID() int64
 	GetUpdatedAt() time.Time
 }
 
-func (r Resource) GetUpdatedAt() time.Time {
+func (r *resource) GetUpdatedAt() time.Time {
 	return r.UpdatedAt
 }
 
-func (r Resource) GetID() int64 {
+func (r *resource) GetID() int64 {
 	return r.ID
 }
 
@@ -98,6 +98,10 @@ func (r *Resources) GetLabels() []*Label {
 	return labels
 }
 
+func (r *Resources) GetLabel(id int64) *Label {
+	return r.Labels[id]
+}
+
 func (r *Resources) GetProjects() []*Project {
 	projects := make([]*Project, 0, len(r.Projects))
 
@@ -128,7 +132,11 @@ func (r *Resources) GetTasks() []*Task {
 	return tasks
 }
 
-func GetSyncStatus[T Syncable](res []T) *time.Time {
+func (r *Resources) GetTask(id int64) *Task {
+	return r.Tasks[id]
+}
+
+func GetSyncStatus[T Resource](res []T) *time.Time {
 	if len(res) == 0 {
 		return nil
 	}

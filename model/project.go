@@ -7,7 +7,7 @@ import (
 
 // Project represents a project
 type Project struct {
-	Resource
+	resource
 	UserID      int64      `json:"user_id"`
 	Content     string     `json:"content"`
 	Description string     `json:"description"`

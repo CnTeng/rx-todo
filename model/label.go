@@ -6,7 +6,7 @@ import (
 
 // Label represents a label
 type Label struct {
-	Resource
+	resource
 	UserID int64  `json:"user_id"`
 	Name   string `json:"name"`
 	Color  string `json:"color"`
@@ -14,8 +14,8 @@ type Label struct {
 
 // LabelCreationRequest represents a request to create a label
 type LabelCreationRequest struct {
-	Name  string `json:"name" validate:"required"`
-	Color string `json:"color" validate:"required,hexcolor"`
+	Name  *string `json:"name" validate:"required"`
+	Color *string `json:"color" validate:"required,hexcolor"`
 }
 
 // LabelUpdateRequest represents a request to update a label
@@ -24,9 +24,14 @@ type LabelUpdateRequest struct {
 	Color *string `json:"color" validate:"omitnil,hexcolor"`
 }
 
-type LabelUpdateRequestWithID struct {
+type LabelDeleteRequestWithID struct {
 	ID int64 `json:"id" validate:"required,notempty"`
-	LabelUpdateRequest
+}
+
+// LabelUpdateRequestWithID represents a request to update a label with an ID
+type LabelUpdateRequestWithID struct {
+	ID *int64 `json:"id" validate:"required,notempty"`
+	*LabelUpdateRequest
 }
 
 // LabelUpdateRequest at least needs one of name or color to be set
@@ -39,8 +44,13 @@ func (r *LabelUpdateRequest) validate() error {
 }
 
 func (r *LabelCreationRequest) Patch(label *Label) {
-	label.Name = r.Name
-	label.Color = r.Color
+	if r.Name != nil {
+		label.Name = *r.Name
+	}
+
+	if r.Color != nil {
+		label.Color = *r.Color
+	}
 }
 
 func (r *LabelUpdateRequest) Patch(label *Label) {

@@ -50,6 +50,21 @@ func labelUpdateHandle(ctx context.Context, req *jsonrpc2.Request) (interface{},
 	return client.UpdateLabel(r)
 }
 
+func labelDeleteHandle(ctx context.Context, req *jsonrpc2.Request) (interface{}, error) {
+	r := &model.LabelDeleteRequestWithID{}
+
+	if err := json.Unmarshal(req.Params, r); err != nil {
+		return nil, err
+	}
+
+	client, ok := ctx.Value(clientKey).(*client.Client)
+	if !ok {
+		return nil, errors.New("client not found in context")
+	}
+
+	return client.DeleteLabel(r.ID)
+}
+
 func registerLabelHandles(s *rpc.JRPCServer) {
 	s.Register("Label.List", labelListHandle)
 	s.Register("Label.Create", labelCreateHandle)
