@@ -2,7 +2,6 @@ package cli
 
 import (
 	"github.com/CnTeng/rx-todo/model"
-	"github.com/fatih/color"
 )
 
 type status int
@@ -24,18 +23,16 @@ func NewStatusMap[T model.Resource](res []T, status status) *statusMap {
 	return &sm
 }
 
-func (sm *statusMap) getStatusIcon(id int64, iconType iconType) string {
+func (sm *statusMap) getStatusIcon(id int64, icons *icons) string {
 	s := (*sm)[id]
-
-	icons := getIcons(iconType)
 
 	switch s {
 	case Add:
-		return color.New(color.FgGreen).Sprint(icons.add)
+		return icons.add
 	case Change:
-		return color.New(color.FgYellow).Sprint(icons.change)
+		return icons.change
 	case Delete:
-		return color.New(color.FgRed).Sprint(icons.delete)
+		return icons.delete
 	default:
 		return icons.none
 	}

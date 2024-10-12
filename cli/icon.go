@@ -1,5 +1,7 @@
 package cli
 
+import "github.com/fatih/color"
+
 type icons struct {
 	done   string
 	undone string
@@ -37,13 +39,23 @@ const (
 	Text
 )
 
-func getIcons(t iconType) *icons {
-	switch t {
-	case Nerd:
-		return &nerdIcons
-	case Text:
-		return &textIcons
-	default:
-		return &textIcons
+func newIcons(t iconType) *icons {
+	var icons icons
+
+	if t == Nerd {
+		icons = nerdIcons
+	} else {
+		icons = textIcons
 	}
+
+	return &icons
+}
+
+func (i *icons) withColor() *icons {
+	i.done = color.New(color.FgGreen).Sprint(i.done)
+	i.add = color.New(color.FgGreen).Sprint(i.add)
+	i.change = color.New(color.FgYellow).Sprint(i.change)
+	i.delete = color.New(color.FgRed).Sprint(i.delete)
+
+	return i
 }

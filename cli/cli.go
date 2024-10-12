@@ -1,9 +1,9 @@
 package cli
 
 type cli struct {
-	iconType iconType
+	icons *icons
 }
 
 func NewCLI(iconType iconType) *cli {
-	return &cli{iconType: iconType}
+	return &cli{icons: newIcons(iconType).withColor()}
 }

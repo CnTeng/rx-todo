@@ -12,14 +12,6 @@ import (
 
 type LabelSlice []*model.Label
 
-func (ls *LabelSlice) GetIDs() *[]int64 {
-	ids := make([]int64, 0, len(*ls))
-	for _, l := range *ls {
-		ids = append(ids, l.ID)
-	}
-	return &ids
-}
-
 func (ls *LabelSlice) SortByID() *LabelSlice {
 	sort.Slice(*ls, func(i, j int) bool {
 		return (*ls)[i].ID < (*ls)[j].ID
@@ -51,7 +43,7 @@ func (c *cli) PrintLabels(ls *LabelSlice, sm *statusMap) {
 	for _, l := range *ls {
 		vals := make([]any, 0, 4)
 		if sm != nil {
-			vals = append(vals, sm.getStatusIcon(l.ID, c.iconType))
+			vals = append(vals, sm.getStatusIcon(l.ID, c.icons))
 		}
 
 		vals = append(
