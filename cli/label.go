@@ -34,7 +34,7 @@ func (ls *LabelSlice) SortByName() *LabelSlice {
 	return ls
 }
 
-func (c *cli) ListLabels(ls *LabelSlice, sm *statusMap) {
+func (c *cli) PrintLabels(ls *LabelSlice, sm *statusMap) {
 	headers := make([]any, 0, 4)
 
 	if sm != nil {

@@ -44,7 +44,7 @@ func (ts *TaskSlice) FilterByName(name string) *TaskSlice {
 	})
 }
 
-func (c *cli) ListTasks(ts *TaskSlice, sm *statusMap) {
+func (c *cli) PrintTasks(ts *TaskSlice, sm *statusMap) {
 	icons := getIcons(c.iconType)
 	headers := make([]any, 0, 7)
 

@@ -20,7 +20,7 @@ var labelCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		cli.NewCLI(cli.Nerd).ListLabels(&labels, nil)
+		cli.NewCLI(cli.Nerd).PrintLabels(&labels, nil)
 	},
 }
 
@@ -47,7 +47,7 @@ var labelAddCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		cli.NewCLI(cli.Nerd).ListLabels(&labels, sm)
+		cli.NewCLI(cli.Nerd).PrintLabels(&labels, sm)
 	},
 }
 
@@ -78,7 +78,7 @@ var labelModifyCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		cli.NewCLI(cli.Nerd).ListLabels(&labels, sm)
+		cli.NewCLI(cli.Nerd).PrintLabels(&labels, sm)
 	},
 }
 
