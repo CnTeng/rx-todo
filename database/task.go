@@ -85,7 +85,7 @@ func (db *DB) CreateTask(task *model.Task) (*model.Task, error) {
 		if err := tx.QueryRow(
 			createTaskQuery,
 			task.UserID,
-			task.Content,
+			task.Name,
 			task.Description,
 			dueDate,
 			dueRecurring,
@@ -125,7 +125,7 @@ func (db *DB) GetTaskByID(userID, id int64) (*model.Task, error) {
 	err := db.QueryRow(getTaskByIDQuery, userID, id).Scan(
 		&task.ID,
 		&task.UserID,
-		&task.Content,
+		&task.Name,
 		&task.Description,
 		&dueData,
 		&dueRecurring,
@@ -178,7 +178,7 @@ func (db *DB) GetTasks(user int64) ([]*model.Task, error) {
 		if err := rows.Scan(
 			&task.ID,
 			&task.UserID,
-			&task.Content,
+			&task.Name,
 			&task.Description,
 			&dueData,
 			&dueRecurring,
@@ -233,7 +233,7 @@ func (db *DB) GetTasksByUpdateTime(user int64, updateTime *time.Time) ([]*model.
 		if err := rows.Scan(
 			&task.ID,
 			&task.UserID,
-			&task.Content,
+			&task.Name,
 			&task.Description,
 			&dueData,
 			&dueRecurring,
@@ -274,7 +274,7 @@ func (db *DB) UpdateTask(task *model.Task) (*model.Task, error) {
 			updateTaskQuery,
 			task.ID,
 			task.UserID,
-			task.Content,
+			task.Name,
 			task.Description,
 			task.Due.Date,
 			task.Due.Recurring,

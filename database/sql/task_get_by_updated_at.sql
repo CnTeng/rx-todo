@@ -1,7 +1,7 @@
 SELECT
   id,
   user_id,
-  content,
+  name,
   description,
   (due).date,
   (due).recurring,

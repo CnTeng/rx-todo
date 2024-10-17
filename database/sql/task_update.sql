@@ -1,6 +1,6 @@
 UPDATE tasks
 SET
-  content = $3,
+  name = $3,
   description = $4,
   due = ROW ($5, $6),
   duration = ROW ($7, $8),

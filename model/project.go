@@ -9,7 +9,7 @@ import (
 type Project struct {
 	resource
 	UserID      int64      `json:"user_id"`
-	Content     string     `json:"content"`
+	Name        string     `json:"name"`
 	Description string     `json:"description"`
 	ParentID    *int64     `json:"parent_id"`
 	ChildOrder  int64      `json:"child_order"`
@@ -21,7 +21,7 @@ type Project struct {
 
 // ProjectCreationRequest represents a request to create a project
 type ProjectCreationRequest struct {
-	Content     *string `json:"content" validate:"required,notempty"`
+	Name        *string `json:"name"       validate:"required,notempty"`
 	Description *string `json:"description"`
 	ParentID    *int64  `json:"parent_id"`
 	Favorite    *bool   `json:"favorite"`
@@ -29,7 +29,7 @@ type ProjectCreationRequest struct {
 
 // ProjectUpdateRequest represents a request to update a project
 type ProjectUpdateRequest struct {
-	Content     *string `json:"content" validate:"omitnil,notempty"`
+	Name        *string `json:"name"        validate:"omitnil,notempty"`
 	Description *string `json:"description" validate:"omitnil,notempty"`
 }
 
@@ -51,16 +51,16 @@ type ProjectReorderRequest struct {
 }
 
 func (r *ProjectUpdateRequest) validate() error {
-	if r.Content == nil && r.Description == nil {
-		return fmt.Errorf("validate: at least one of content or description should be set")
+	if r.Name == nil && r.Description == nil {
+		return fmt.Errorf("validate: at least one of name or description should be set")
 	}
 
 	return nil
 }
 
 func (r *ProjectCreationRequest) Patch(project *Project) {
-	if r.Content != nil {
-		project.Content = *r.Content
+	if r.Name != nil {
+		project.Name = *r.Name
 	}
 
 	if r.Description != nil {
@@ -77,8 +77,8 @@ func (r *ProjectCreationRequest) Patch(project *Project) {
 }
 
 func (r *ProjectUpdateRequest) Patch(project *Project) {
-	if r.Content != nil {
-		project.Content = *r.Content
+	if r.Name != nil {
+		project.Name = *r.Name
 	}
 
 	if r.Description != nil {

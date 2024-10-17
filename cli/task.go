@@ -23,7 +23,7 @@ func (ts *TaskSlice) SortByID() *TaskSlice {
 
 func (ts *TaskSlice) SortByName() *TaskSlice {
 	slices.SortStableFunc(*ts, func(a, b *model.Task) int {
-		return cmp.Compare(a.Content, b.Content)
+		return cmp.Compare(a.Name, b.Name)
 	})
 	return ts
 }
@@ -40,14 +40,14 @@ func (ts *TaskSlice) Filter(f func(*model.Task) bool) *TaskSlice {
 
 func (ts *TaskSlice) FilterByName(name string) *TaskSlice {
 	return ts.Filter(func(t *model.Task) bool {
-		return t.Content == name
+		return t.Name == name
 	})
 }
 
 func (c *cli) PrintTasks(ts *TaskSlice) {
 	headers := make([]any, 0, 7)
 
-	headers = append(headers, " ", "ID", "Content", "Description", "Priority", "Labels")
+	headers = append(headers, " ", "ID", "Name", "Description", "Priority", "Labels")
 
 	tbl := table.New(headers...).
 		WithHeaderFormatter(color.New(color.FgGreen, color.Underline).SprintfFunc()).
@@ -67,7 +67,7 @@ func (c *cli) PrintTasks(ts *TaskSlice) {
 		vals = append(
 			vals,
 			color.New(color.FgYellow).Sprint(t.ID),
-			t.Content,
+			t.Name,
 			t.Description,
 			t.Priority,
 			strings.Join(t.Labels, ", "),

@@ -35,7 +35,7 @@ var taskAddCmd = &cobra.Command{
 	Short:   "Add new task",
 	Run: func(cmd *cobra.Command, args []string) {
 		request := &model.TaskCreationRequest{
-			Content:     getValue(cmd, cmd.Flags().GetString, "content"),
+			Name:        getValue(cmd, cmd.Flags().GetString, "name"),
 			Description: getValue(cmd, cmd.Flags().GetString, "description"),
 			Priority:    getValue(cmd, cmd.Flags().GetInt, "priority"),
 			ProjectID:   getValue(cmd, cmd.Flags().GetInt64, "project"),
@@ -121,7 +121,7 @@ func init() {
 	rootCmd.AddCommand(taskAddCmd)
 	rootCmd.AddCommand(taskDeleteCmd)
 
-	taskAddCmd.Flags().StringP("content", "c", "", "Task content")
+	taskAddCmd.Flags().StringP("name", "n", "", "Task name")
 	taskAddCmd.Flags().StringP("description", "D", "", "Task description")
 	taskAddCmd.Flags().StringP("due", "d", "", "Task labels")
 	taskAddCmd.Flags().BoolP("recurring", "r", false, "Task recurring")

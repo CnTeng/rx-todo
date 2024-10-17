@@ -15,7 +15,7 @@ type Duration struct {
 type Task struct {
 	resource
 	UserID      int64          `json:"user_id"`
-	Content     string         `json:"content"`
+	Name        string         `json:"name"`
 	Description string         `json:"description"`
 	Due         *Due           `json:"due,omitempty"`
 	Duration    *Duration      `json:"duration,omitempty"`
@@ -32,19 +32,19 @@ type Task struct {
 
 // TaskCreationRequest represents a request to create a task
 type TaskCreationRequest struct {
-	Content     *string   `json:"content"       toml:"content"     validate:"required,notempty"`
-	Description *string   `json:"description"   toml:"description"`
-	Due         *Due      `json:"due,omitempty" toml:"due"`
-	Duration    *Duration `json:"duration"      toml:"duration"`
-	Priority    *int      `json:"priority"      toml:"priority"`
-	ProjectID   *int64    `json:"project_id"    toml:"project_id"`
-	ParentID    *int64    `json:"parent_id"     toml:"parent_id"`
-	Labels      *[]string `json:"labels"        toml:"labels"`
+	Name        *string   `json:"name"        toml:"name"       validate:"required,notempty"`
+	Description *string   `json:"description" toml:"description"`
+	Due         *Due      `json:"due"         toml:"due"`
+	Duration    *Duration `json:"duration"    toml:"duration"`
+	Priority    *int      `json:"priority"    toml:"priority"`
+	ProjectID   *int64    `json:"project_id"  toml:"project_id"`
+	ParentID    *int64    `json:"parent_id"   toml:"parent_id"`
+	Labels      *[]string `json:"labels"      toml:"labels"`
 }
 
 // TaskUpdateRequest represents a request to update a task
 type TaskUpdateRequest struct {
-	Content     *string   `json:"content"     toml:"content"`
+	Name        *string   `json:"name"        toml:"name"`
 	Description *string   `json:"description" toml:"description"`
 	Due         *Due      `json:"due"         toml:"due"`
 	Duration    *Duration `json:"duration"    toml:"duration"`
@@ -67,7 +67,7 @@ type TaskDeleteRequestWithID struct {
 
 // TaskUpdateRequest at least needs one of task attributes to be set
 func (r *TaskUpdateRequest) Validate() error {
-	if r.Content == nil && r.Description == nil &&
+	if r.Name == nil && r.Description == nil &&
 		r.Due == nil && r.Duration == nil &&
 		r.Priority == nil && r.ProjectID == nil &&
 		r.ParentID == nil && r.ChildOrder == nil &&
@@ -83,8 +83,8 @@ func (r *TaskUpdateRequest) Validate() error {
 }
 
 func (r *TaskCreationRequest) Patch(task *Task) {
-	if r.Content != nil {
-		task.Content = *r.Content
+	if r.Name != nil {
+		task.Name = *r.Name
 	}
 
 	if r.Description != nil {
@@ -118,8 +118,8 @@ func (r *TaskCreationRequest) Patch(task *Task) {
 }
 
 func (r *TaskUpdateRequest) Patch(task *Task) {
-	if r.Content != nil {
-		task.Content = *r.Content
+	if r.Name != nil {
+		task.Name = *r.Name
 	}
 
 	if r.Description != nil {

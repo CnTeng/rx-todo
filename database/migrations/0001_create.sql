@@ -23,7 +23,7 @@ CREATE TABLE tokens (
 CREATE TABLE projects (
   id bigserial,
   user_id bigint NOT NULL,
-  content text NOT NULL,
+  name text NOT NULL,
   description text NOT NULL DEFAULT '',
   parent_id bigint,
   child_order bigint NOT NULL DEFAULT 0,
@@ -46,7 +46,7 @@ CREATE TYPE duration AS (amount int, unit varchar(255));
 CREATE TABLE tasks (
   id bigserial,
   user_id bigint NOT NULL,
-  content text NOT NULL,
+  name text NOT NULL,
   description text NOT NULL DEFAULT '',
   due due NOT NULL DEFAULT ROW (NULL, NULL),
   duration duration NOT NULL DEFAULT ROW (NULL, NULL),
@@ -92,7 +92,7 @@ CREATE VIEW task_with_labels AS
 SELECT
   tasks.id,
   tasks.user_id,
-  tasks.content,
+  tasks.name,
   tasks.description,
   tasks.due,
   tasks.duration,

@@ -1,4 +1,4 @@
-# content = 'example'     # mandatory
+# name = 'example'     # mandatory
 # description = 'example' # optional
 # priority = 1            # optional
 # project_id = 1          # optional

@@ -1,6 +1,6 @@
 UPDATE projects
 SET
-  content = $3,
+  name = $3,
   description = $4,
   parent_id = $5,
   child_order = $6,

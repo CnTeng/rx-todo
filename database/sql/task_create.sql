@@ -1,7 +1,7 @@
 INSERT INTO
   tasks (
     user_id,
-    content,
+    name,
     description,
     due,
     duration,

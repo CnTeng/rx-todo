@@ -1,7 +1,7 @@
 INSERT INTO
   projects (
     user_id,
-    content,
+    name,
     description,
     parent_id,
     child_order,

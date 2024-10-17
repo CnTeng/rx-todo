@@ -48,7 +48,7 @@ func (db *DB) CreateProject(project *model.Project) (*model.Project, error) {
 		if err := tx.QueryRow(
 			createProjectQuery,
 			project.UserID,
-			project.Content,
+			project.Name,
 			project.Description,
 			project.ParentID,
 			project.ChildOrder,
@@ -78,7 +78,7 @@ func (db *DB) GetProjectByID(userID, id int64) (*model.Project, error) {
 	).Scan(
 		&project.ID,
 		&project.UserID,
-		&project.Content,
+		&project.Name,
 		&project.Description,
 		&project.ParentID,
 		&project.ChildOrder,
@@ -110,7 +110,7 @@ func (db *DB) GetProjects(userID int64) ([]*model.Project, error) {
 		if err := rows.Scan(
 			&project.ID,
 			&project.UserID,
-			&project.Content,
+			&project.Name,
 			&project.Description,
 			&project.ParentID,
 			&project.ChildOrder,
@@ -145,7 +145,7 @@ func (db *DB) GetProjectsByUpdateTime(userID int64, updateTime *time.Time) ([]*m
 		if err := rows.Scan(
 			&project.ID,
 			&project.UserID,
-			&project.Content,
+			&project.Name,
 			&project.Description,
 			&project.ParentID,
 			&project.ChildOrder,
@@ -170,7 +170,7 @@ func (db *DB) UpdateProject(project *model.Project) (*model.Project, error) {
 		updateProjectQuery,
 		project.ID,
 		project.UserID,
-		project.Content,
+		project.Name,
 		project.Description,
 		project.ParentID,
 		project.ChildOrder,
@@ -190,7 +190,7 @@ func (db *DB) UpdateProjects(projects []*model.Project) ([]*model.Project, error
 				updateProjectQuery,
 				project.ID,
 				project.UserID,
-				project.Content,
+				project.Name,
 				project.Description,
 				project.ParentID,
 				project.ChildOrder,
