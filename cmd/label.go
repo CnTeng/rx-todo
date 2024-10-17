@@ -20,7 +20,7 @@ var labelCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		cli.NewCLI(cli.Nerd).PrintLabels(&labels, nil)
+		cli.NewCLI(cli.Nerd).PrintLabels(&labels)
 	},
 }
 
@@ -40,14 +40,8 @@ var labelAddCmd = &cobra.Command{
 		if err := c.Call("Label.Create", request, label); err != nil {
 			cobra.CheckErr(err)
 		}
-		sm := cli.NewStatusMap([]*model.Label{label}, cli.Add)
 
-		labels := cli.LabelSlice{}
-		if err := c.Call("Label.List", nil, &labels); err != nil {
-			cobra.CheckErr(err)
-		}
-
-		cli.NewCLI(cli.Nerd).PrintLabels(&labels, sm)
+		cli.NewCLI(cli.Nerd).PrintLabels(&cli.LabelSlice{label})
 	},
 }
 
@@ -71,14 +65,8 @@ var labelModifyCmd = &cobra.Command{
 		if err := c.Call("Label.Update", request, &label); err != nil {
 			cobra.CheckErr(err)
 		}
-		sm := cli.NewStatusMap([]*model.Label{label}, cli.Change)
 
-		labels := cli.LabelSlice{}
-		if err := c.Call("Label.List", nil, &labels); err != nil {
-			cobra.CheckErr(err)
-		}
-
-		cli.NewCLI(cli.Nerd).PrintLabels(&labels, sm)
+		cli.NewCLI(cli.Nerd).PrintLabels(&cli.LabelSlice{label})
 	},
 }
 

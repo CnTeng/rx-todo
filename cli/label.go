@@ -26,12 +26,9 @@ func (ls *LabelSlice) SortByName() *LabelSlice {
 	return ls
 }
 
-func (c *cli) PrintLabels(ls *LabelSlice, sm *statusMap) {
+func (c *cli) PrintLabels(ls *LabelSlice) {
 	headers := make([]any, 0, 4)
 
-	if sm != nil {
-		headers = append(headers, " ")
-	}
 	headers = append(headers, "ID", "Label", "Color")
 
 	tbl := table.New(headers...).
@@ -42,15 +39,12 @@ func (c *cli) PrintLabels(ls *LabelSlice, sm *statusMap) {
 
 	for _, l := range *ls {
 		vals := make([]any, 0, 4)
-		if sm != nil {
-			vals = append(vals, sm.getStatusIcon(l.ID, c.icons))
-		}
 
 		vals = append(
 			vals,
 			color.New(color.FgYellow).Sprint(l.ID),
 			l.Name,
-			BgHexRGB(l.Color).Sprint(l.Color),
+			color.BgRGB(strToRGB(l.Color)).Sprint(l.Color),
 		)
 
 		tbl.AddRow(vals...)

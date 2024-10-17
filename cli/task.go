@@ -44,12 +44,9 @@ func (ts *TaskSlice) FilterByName(name string) *TaskSlice {
 	})
 }
 
-func (c *cli) PrintTasks(ts *TaskSlice, sm *statusMap) {
+func (c *cli) PrintTasks(ts *TaskSlice) {
 	headers := make([]any, 0, 7)
 
-	if sm != nil {
-		headers = append(headers, " ")
-	}
 	headers = append(headers, " ", "ID", "Content", "Description", "Priority", "Labels")
 
 	tbl := table.New(headers...).
@@ -60,9 +57,6 @@ func (c *cli) PrintTasks(ts *TaskSlice, sm *statusMap) {
 
 	for _, t := range *ts {
 		vals := make([]any, 0, 7)
-		if sm != nil {
-			vals = append(vals, sm.getStatusIcon(t.ID, c.icons))
-		}
 
 		if t.Done {
 			vals = append(vals, c.icons.done)

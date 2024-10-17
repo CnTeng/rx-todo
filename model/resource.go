@@ -2,10 +2,9 @@ package model
 
 import "time"
 
+// Resource represents a generic struct for all resources
 type resource struct {
-	ID int64 `json:"id"`
-
-	// Meta fields
+	ID        int64     `json:"id"`
 	Deleted   bool      `json:"deleted"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

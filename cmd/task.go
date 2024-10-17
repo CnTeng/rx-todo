@@ -25,7 +25,7 @@ var taskListCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		cli.NewCLI(cli.Nerd).PrintTasks(tasks.SortByID(), nil)
+		cli.NewCLI(cli.Nerd).PrintTasks(tasks.SortByID())
 	},
 }
 
@@ -81,14 +81,8 @@ var taskAddCmd = &cobra.Command{
 		if err := c.Call("Task.Create", request, task); err != nil {
 			cobra.CheckErr(err)
 		}
-		sm := cli.NewStatusMap([]*model.Task{task}, cli.Add)
 
-		tasks := cli.TaskSlice{}
-		if err := c.Call("Task.List", nil, &tasks); err != nil {
-			cobra.CheckErr(err)
-		}
-
-		cli.NewCLI(cli.Nerd).PrintTasks(tasks.SortByID(), sm)
+		cli.NewCLI(cli.Nerd).PrintTasks(&cli.TaskSlice{task})
 	},
 }
 
@@ -119,14 +113,6 @@ var taskDeleteCmd = &cobra.Command{
 		if err := c.Call("Task.List", nil, &tasks); err != nil {
 			cobra.CheckErr(err)
 		}
-
-		task := &model.Task{}
-		if err := c.Call("Task.Delete", request, task); err != nil {
-			cobra.CheckErr(err)
-		}
-		sm := cli.NewStatusMap([]*model.Task{task}, cli.Delete)
-
-		cli.NewCLI(cli.Nerd).PrintTasks(tasks.SortByID(), sm)
 	},
 }
 
