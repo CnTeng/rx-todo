@@ -10,7 +10,7 @@ type Duration struct {
 	Unit   *string `json:"unit"`
 }
 
-type SubTask struct {
+type SubTasks struct {
 	Total int `json:"total"`
 	Done  int `json:"done"`
 }
@@ -36,7 +36,7 @@ type Task struct {
 	ParentID    *int64     `json:"parent_id,omitempty"`
 	ChildOrder  int        `json:"child_order"`
 	Labels      []*Label   `json:"labels"`
-	SubTask     SubTask    `json:"sub_task,omitempty"`
+	SubTasks    SubTasks   `json:"sub_tasks"`
 	Done        bool       `json:"done"`
 	DoneAt      *time.Time `json:"done_at,omitempty"`
 	Archived    bool       `json:"archived"`
