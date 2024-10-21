@@ -154,3 +154,41 @@ FROM
   tasks
   LEFT JOIN task_counts tc ON tasks.id = tc.parent_id
   AND tasks.user_id = tc.user_id;
+
+CREATE VIEW projects_with_sub_tasks AS
+WITH
+  task_counts AS (
+    SELECT
+      project_id,
+      user_id,
+      count(*) AS total_tasks,
+      count(
+        CASE
+          WHEN done THEN 1
+          ELSE NULL
+        END
+      ) AS done_tasks
+    FROM
+      tasks
+    GROUP BY
+      project_id,
+      user_id
+  )
+SELECT
+  projects.id,
+  projects.user_id,
+  projects.name,
+  projects.description,
+  projects.child_order,
+  projects.inbox,
+  projects.favorite,
+  coalesce(tc.total_tasks, 0) AS total_tasks,
+  coalesce(tc.done_tasks, 0) AS done_tasks,
+  projects.archived,
+  projects.archived_at,
+  projects.created_at,
+  projects.updated_at
+FROM
+  projects
+  LEFT JOIN task_counts tc ON projects.id = tc.project_id
+  AND projects.user_id = tc.user_id;

@@ -81,6 +81,8 @@ func (db *DB) GetProjectByID(id, userID int64) (*model.Project, error) {
 		&project.ChildOrder,
 		&project.Inbox,
 		&project.Favorite,
+		&project.SubTasks.Total,
+		&project.SubTasks.Done,
 		&project.Archived,
 		&project.ArchivedAt,
 		&project.CreatedAt,
@@ -92,10 +94,10 @@ func (db *DB) GetProjectByID(id, userID int64) (*model.Project, error) {
 	return project, nil
 }
 
-func (db *DB) GetProjects(userID int64) ([]*model.Project, error) {
+func (db *DB) getProjects(query string, args ...any) ([]*model.Project, error) {
 	var projects []*model.Project
 
-	rows, err := db.Query(getProjectsQuery, userID)
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get projects: %w", err)
 	}
@@ -112,6 +114,8 @@ func (db *DB) GetProjects(userID int64) ([]*model.Project, error) {
 			&project.ChildOrder,
 			&project.Inbox,
 			&project.Favorite,
+			&project.SubTasks.Total,
+			&project.SubTasks.Done,
 			&project.Archived,
 			&project.ArchivedAt,
 			&project.CreatedAt,
@@ -126,38 +130,12 @@ func (db *DB) GetProjects(userID int64) ([]*model.Project, error) {
 	return projects, nil
 }
 
+func (db *DB) GetProjects(userID int64) ([]*model.Project, error) {
+	return db.getProjects(getProjectsQuery, userID)
+}
+
 func (db *DB) GetProjectsByUpdateTime(userID int64, updateTime *time.Time) ([]*model.Project, error) {
-	var projects []*model.Project
-
-	rows, err := db.Query(getProjectsByUpdateTimeQuery, userID, updateTime)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get projects: %w", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		project := &model.Project{}
-
-		if err := rows.Scan(
-			&project.ID,
-			&project.UserID,
-			&project.Name,
-			&project.Description,
-			&project.ChildOrder,
-			&project.Inbox,
-			&project.Favorite,
-			&project.Archived,
-			&project.ArchivedAt,
-			&project.CreatedAt,
-			&project.UpdatedAt,
-		); err != nil {
-			return nil, fmt.Errorf("failed to get tasks: %w", err)
-		}
-
-		projects = append(projects, project)
-	}
-
-	return projects, nil
+	return db.getProjects(getProjectsByUpdateTimeQuery, userID, updateTime)
 }
 
 func (db *DB) UpdateProject(project *model.Project) (*model.Project, error) {

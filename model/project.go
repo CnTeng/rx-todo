@@ -14,6 +14,7 @@ type Project struct {
 	ChildOrder  int64      `json:"child_order"`
 	Inbox       bool       `json:"inbox"`
 	Favorite    bool       `json:"favorite"`
+	SubTasks    SubTasks   `json:"sub_tasks"`
 	Archived    bool       `json:"archived"`
 	ArchivedAt  *time.Time `json:"archived_at,omitempty"`
 }
