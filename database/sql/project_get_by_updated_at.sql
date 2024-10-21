@@ -3,7 +3,6 @@ SELECT
   user_id,
   name,
   description,
-  parent_id,
   child_order,
   inbox,
   favorite,

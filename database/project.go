@@ -40,7 +40,6 @@ func (db *DB) CreateProject(project *model.Project) (*model.Project, error) {
 		if err := tx.QueryRow(
 			getProjectNextOrderQuery,
 			project.UserID,
-			project.ParentID,
 		).Scan(&project.ChildOrder); err != nil {
 			return fmt.Errorf("failed to get project child_order: %w", err)
 		}
@@ -50,7 +49,6 @@ func (db *DB) CreateProject(project *model.Project) (*model.Project, error) {
 			project.UserID,
 			project.Name,
 			project.Description,
-			project.ParentID,
 			project.ChildOrder,
 			project.Favorite,
 		).Scan(
@@ -68,7 +66,7 @@ func (db *DB) CreateProject(project *model.Project) (*model.Project, error) {
 	})
 }
 
-func (db *DB) GetProjectByID(userID, id int64) (*model.Project, error) {
+func (db *DB) GetProjectByID(id, userID int64) (*model.Project, error) {
 	project := &model.Project{}
 
 	if err := db.QueryRow(
@@ -80,7 +78,6 @@ func (db *DB) GetProjectByID(userID, id int64) (*model.Project, error) {
 		&project.UserID,
 		&project.Name,
 		&project.Description,
-		&project.ParentID,
 		&project.ChildOrder,
 		&project.Inbox,
 		&project.Favorite,
@@ -112,7 +109,6 @@ func (db *DB) GetProjects(userID int64) ([]*model.Project, error) {
 			&project.UserID,
 			&project.Name,
 			&project.Description,
-			&project.ParentID,
 			&project.ChildOrder,
 			&project.Inbox,
 			&project.Favorite,
@@ -147,7 +143,6 @@ func (db *DB) GetProjectsByUpdateTime(userID int64, updateTime *time.Time) ([]*m
 			&project.UserID,
 			&project.Name,
 			&project.Description,
-			&project.ParentID,
 			&project.ChildOrder,
 			&project.Inbox,
 			&project.Favorite,
@@ -172,7 +167,6 @@ func (db *DB) UpdateProject(project *model.Project) (*model.Project, error) {
 		project.UserID,
 		project.Name,
 		project.Description,
-		project.ParentID,
 		project.ChildOrder,
 		project.Inbox,
 		project.Favorite,
@@ -192,7 +186,6 @@ func (db *DB) UpdateProjects(projects []*model.Project) ([]*model.Project, error
 				project.UserID,
 				project.Name,
 				project.Description,
-				project.ParentID,
 				project.ChildOrder,
 				project.Inbox,
 				project.Favorite,
@@ -218,18 +211,18 @@ func (db *DB) UpdateProjectStatus(project *model.Project) (*model.Project, error
 	return project, nil
 }
 
-func (db *DB) DeleteProject(project *model.Project) error {
-	inboxID, err := db.GetUserInboxID(project.UserID)
-	if err == nil && inboxID == project.ID {
+func (db *DB) DeleteProject(id, userID int64) error {
+	inboxID, err := db.GetUserInboxID(userID)
+	if err == nil && inboxID == id {
 		return fmt.Errorf("failed to delete inbox")
 	}
 
 	return db.withTx(func(tx *sql.Tx) error {
-		if _, err := tx.Exec(deleteProjectQuery, project.ID, project.UserID); err != nil {
+		if _, err := tx.Exec(deleteProjectQuery, id, userID); err != nil {
 			return fmt.Errorf("failed to delete project: %w", err)
 		}
 
-		if _, err := tx.Exec(createDeletionLogQuery, project.UserID, "project", project.ID); err != nil {
+		if _, err := tx.Exec(createDeletionLogQuery, userID, "project", id); err != nil {
 			return fmt.Errorf("failed to create deletion log: %w", err)
 		}
 		return nil

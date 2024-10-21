@@ -52,7 +52,7 @@ func (h *handler) getProject(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	project, err := h.GetProjectByID(userID, id)
+	project, err := h.GetProjectByID(id, userID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"error": err.Error()})
@@ -105,7 +105,7 @@ func (h *handler) updateProject(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	project, err := h.GetProjectByID(userID, id)
+	project, err := h.GetProjectByID(id, userID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"error": err.Error()})
@@ -133,7 +133,7 @@ func (h *handler) reorderProject(c *fiber.Ctx) error {
 
 	projects := []*model.Project{}
 	for _, child := range req.Children {
-		project, err := h.GetProjectByID(userID, child.ID)
+		project, err := h.GetProjectByID(child.ID, userID)
 		if err != nil {
 			return c.Status(fiber.StatusNotFound).
 				JSON(fiber.Map{"error": err.Error()})
@@ -162,7 +162,7 @@ func (h *handler) archiveProject(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	project, err := h.GetProjectByID(userID, id)
+	project, err := h.GetProjectByID(id, userID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"error": err.Error()})
@@ -193,7 +193,7 @@ func (h *handler) unarchiveProject(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	project, err := h.GetProjectByID(userID, id)
+	project, err := h.GetProjectByID(id, userID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"error": err.Error()})
@@ -224,13 +224,12 @@ func (h *handler) deleteProject(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	project, err := h.GetProjectByID(userID, id)
-	if err != nil {
+	if _, err := h.GetProjectByID(id, userID); err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err := h.DeleteProject(project); err != nil {
+	if err := h.DeleteProject(id, userID); err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})
 	}

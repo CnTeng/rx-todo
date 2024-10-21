@@ -11,7 +11,6 @@ type Project struct {
 	UserID      int64      `json:"user_id"`
 	Name        string     `json:"name"`
 	Description string     `json:"description"`
-	ParentID    *int64     `json:"parent_id"`
 	ChildOrder  int64      `json:"child_order"`
 	Inbox       bool       `json:"inbox"`
 	Favorite    bool       `json:"favorite"`
@@ -23,7 +22,6 @@ type Project struct {
 type ProjectCreationRequest struct {
 	Name        *string `json:"name"       validate:"required,notempty"`
 	Description *string `json:"description"`
-	ParentID    *int64  `json:"parent_id"`
 	Favorite    *bool   `json:"favorite"`
 }
 
@@ -31,11 +29,6 @@ type ProjectCreationRequest struct {
 type ProjectUpdateRequest struct {
 	Name        *string `json:"name"        validate:"omitnil,notempty"`
 	Description *string `json:"description" validate:"omitnil,notempty"`
-}
-
-// ProjectMoveRequest represents a request to move a project
-type ProjectMoveRequest struct {
-	ParentID int64 `json:"parent_id" validate:"required"`
 }
 
 // ProjectReorderMap represents a map of project id to child order
@@ -65,10 +58,6 @@ func (r *ProjectCreationRequest) Patch(project *Project) {
 
 	if r.Description != nil {
 		project.Description = *r.Description
-	}
-
-	if r.ParentID != nil {
-		project.ParentID = r.ParentID
 	}
 
 	if r.Favorite != nil {

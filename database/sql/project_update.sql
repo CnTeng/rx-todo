@@ -2,7 +2,6 @@ UPDATE projects
 SET
   name = $3,
   description = $4,
-  parent_id = $5,
   child_order = $6,
   inbox = $7,
   favorite = $8,

@@ -25,8 +25,7 @@ CREATE TABLE projects (
   user_id bigint NOT NULL,
   name text NOT NULL,
   description text NOT NULL DEFAULT '',
-  parent_id bigint,
-  child_order bigint NOT NULL DEFAULT 0,
+  child_order bigint NOT NULL UNIQUE,
   inbox boolean NOT NULL DEFAULT FALSE,
   favorite boolean NOT NULL DEFAULT FALSE,
   archived boolean NOT NULL DEFAULT FALSE,
@@ -35,8 +34,7 @@ CREATE TABLE projects (
   updated_at timestamp NOT NULL DEFAULT now(),
   PRIMARY KEY (id),
   FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-  FOREIGN KEY (parent_id) REFERENCES projects (id) ON DELETE CASCADE,
-  UNIQUE (parent_id, child_order)
+  UNIQUE (user_id, child_order)
 );
 
 CREATE TYPE due AS (date timestamp, recurring boolean);
