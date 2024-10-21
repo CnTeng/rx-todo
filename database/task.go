@@ -103,7 +103,7 @@ func (db *DB) CreateTask(task *model.Task) (*model.Task, error) {
 			if _, err := tx.Exec(
 				createTaskLabelsQuery,
 				task.UserID,
-				label,
+				label.Name,
 				task.ID,
 			); err != nil {
 				return fmt.Errorf("failed to create task labels: %w", err)
@@ -120,9 +120,13 @@ func (db *DB) GetTaskByID(userID, id int64) (*model.Task, error) {
 	var durationAmount *int
 	var durationUnit *string
 
-	task := new(model.Task)
+	task := &model.Task{}
 
-	err := db.QueryRow(getTaskByIDQuery, userID, id).Scan(
+	if err := db.QueryRow(
+		getTaskByIDQuery,
+		userID,
+		id,
+	).Scan(
 		&task.ID,
 		&task.UserID,
 		&task.Name,
@@ -135,15 +139,15 @@ func (db *DB) GetTaskByID(userID, id int64) (*model.Task, error) {
 		&task.ProjectID,
 		&task.ParentID,
 		&task.ChildOrder,
-		&task.Labels,
+		&task.SubTask.Total,
+		&task.SubTask.Done,
 		&task.Done,
 		&task.DoneAt,
 		&task.Archived,
 		&task.ArchivedAt,
 		&task.CreatedAt,
 		&task.UpdatedAt,
-	)
-	if err != nil {
+	); err != nil {
 		return nil, fmt.Errorf("failed to get task: %w", err)
 	}
 
@@ -155,25 +159,31 @@ func (db *DB) GetTaskByID(userID, id int64) (*model.Task, error) {
 		task.Duration = &model.Duration{Amount: durationAmount, Unit: durationUnit}
 	}
 
+	labels, err := db.GetLabelsByTaskID(task.ID, task.UserID)
+	if err != nil {
+		return nil, err
+	}
+	task.Labels = labels
+
 	return task, nil
 }
 
-func (db *DB) GetTasks(user int64) ([]*model.Task, error) {
-	var tasks []*model.Task
+func (db *DB) getTasks(query string, args ...any) ([]*model.Task, error) {
+	tasks := []*model.Task{}
 
-	var dueData *time.Time
-	var dueRecurring *bool
-	var durationAmount *int
-	var durationUnit *string
-
-	rows, err := db.Query(getTasksQuery, user)
+	rows, err := db.Query(query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get tasks: %w", err)
+		return nil, fmt.Errorf("failed to get task: %w", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var task model.Task
+		task := &model.Task{}
+
+		var dueData *time.Time
+		var dueRecurring *bool
+		var durationAmount *int
+		var durationUnit *string
 
 		if err := rows.Scan(
 			&task.ID,
@@ -188,7 +198,8 @@ func (db *DB) GetTasks(user int64) ([]*model.Task, error) {
 			&task.ProjectID,
 			&task.ParentID,
 			&task.ChildOrder,
-			&task.Labels,
+			&task.SubTask.Total,
+			&task.SubTask.Done,
 			&task.Done,
 			&task.DoneAt,
 			&task.Archived,
@@ -207,65 +218,24 @@ func (db *DB) GetTasks(user int64) ([]*model.Task, error) {
 			task.Duration = &model.Duration{Amount: durationAmount, Unit: durationUnit}
 		}
 
-		tasks = append(tasks, &task)
+		labels, err := db.GetLabelsByTaskID(task.ID, task.UserID)
+		if err != nil {
+			return nil, err
+		}
+		task.Labels = labels
+
+		tasks = append(tasks, task)
 	}
 
 	return tasks, nil
 }
 
+func (db *DB) GetTasks(user int64) ([]*model.Task, error) {
+	return db.getTasks(getTasksQuery, user)
+}
+
 func (db *DB) GetTasksByUpdateTime(user int64, updateTime *time.Time) ([]*model.Task, error) {
-	var tasks []*model.Task
-
-	var dueData *time.Time
-	var dueRecurring *bool
-	var durationAmount *int
-	var durationUnit *string
-
-	rows, err := db.Query(getTasksByUpdateTimeQuery, user, updateTime)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tasks: %w", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var task model.Task
-
-		if err := rows.Scan(
-			&task.ID,
-			&task.UserID,
-			&task.Name,
-			&task.Description,
-			&dueData,
-			&dueRecurring,
-			&durationAmount,
-			&durationUnit,
-			&task.Priority,
-			&task.ProjectID,
-			&task.ParentID,
-			&task.ChildOrder,
-			&task.Labels,
-			&task.Done,
-			&task.DoneAt,
-			&task.Archived,
-			&task.ArchivedAt,
-			&task.CreatedAt,
-			&task.UpdatedAt,
-		); err != nil {
-			return nil, fmt.Errorf("failed to get tasks: %w", err)
-		}
-
-		if (dueData != nil) && (dueRecurring != nil) {
-			task.Due = &model.Due{Date: dueData, Recurring: dueRecurring}
-		}
-
-		if (durationAmount != nil) && (durationUnit != nil) {
-			task.Duration = &model.Duration{Amount: durationAmount, Unit: durationUnit}
-		}
-
-		tasks = append(tasks, &task)
-	}
-
-	return tasks, nil
+	return db.getTasks(getTasksByUpdateTimeQuery, user, updateTime)
 }
 
 func (db *DB) UpdateTask(task *model.Task) (*model.Task, error) {
@@ -296,7 +266,7 @@ func (db *DB) UpdateTask(task *model.Task) (*model.Task, error) {
 			if _, err := tx.Exec(
 				createTaskLabelsQuery,
 				task.UserID,
-				label,
+				label.Name,
 				task.ID,
 			); err != nil {
 				return fmt.Errorf("failed to create task labels: %w", err)

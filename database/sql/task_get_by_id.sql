@@ -11,7 +11,8 @@ SELECT
   project_id,
   parent_id,
   child_order,
-  labels,
+  total_tasks,
+  done_tasks,
   done,
   done_at,
   archived,
@@ -19,7 +20,7 @@ SELECT
   created_at,
   updated_at
 FROM
-  task_with_labels
+  tasks_with_sub_tasks
 WHERE
   user_id = $1
   AND id = $2

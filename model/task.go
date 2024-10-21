@@ -3,8 +3,6 @@ package model
 import (
 	"fmt"
 	"time"
-
-	"github.com/lib/pq"
 )
 
 type Duration struct {
@@ -12,22 +10,37 @@ type Duration struct {
 	Unit   *string `json:"unit"`
 }
 
+type SubTask struct {
+	Total int `json:"total"`
+	Done  int `json:"done"`
+}
+
+type Priority int
+
+const (
+	PriorityNone Priority = iota
+	PriorityLow
+	PriorityMedium
+	PriorityHigh
+)
+
 type Task struct {
 	resource
-	UserID      int64          `json:"user_id"`
-	Name        string         `json:"name"`
-	Description string         `json:"description"`
-	Due         *Due           `json:"due,omitempty"`
-	Duration    *Duration      `json:"duration,omitempty"`
-	Priority    int            `json:"priority"`
-	ProjectID   *int64         `json:"project_id,omitempty"`
-	ParentID    *int64         `json:"parent_id,omitempty"`
-	ChildOrder  int            `json:"child_order"`
-	Labels      pq.StringArray `json:"labels"`
-	Done        bool           `json:"done"`
-	DoneAt      *time.Time     `json:"done_at,omitempty"`
-	Archived    bool           `json:"archived"`
-	ArchivedAt  *time.Time     `json:"archived_at,omitempty"`
+	UserID      int64      `json:"user_id"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	Due         *Due       `json:"due,omitempty"`
+	Duration    *Duration  `json:"duration,omitempty"`
+	Priority    Priority   `json:"priority"`
+	ProjectID   *int64     `json:"project_id,omitempty"`
+	ParentID    *int64     `json:"parent_id,omitempty"`
+	ChildOrder  int        `json:"child_order"`
+	Labels      []*Label   `json:"labels"`
+	SubTask     SubTask    `json:"sub_task,omitempty"`
+	Done        bool       `json:"done"`
+	DoneAt      *time.Time `json:"done_at,omitempty"`
+	Archived    bool       `json:"archived"`
+	ArchivedAt  *time.Time `json:"archived_at,omitempty"`
 }
 
 // TaskCreationRequest represents a request to create a task
@@ -36,7 +49,7 @@ type TaskCreationRequest struct {
 	Description *string   `json:"description" toml:"description"`
 	Due         *Due      `json:"due"         toml:"due"`
 	Duration    *Duration `json:"duration"    toml:"duration"`
-	Priority    *int      `json:"priority"    toml:"priority"`
+	Priority    *Priority `json:"priority"    toml:"priority"`
 	ProjectID   *int64    `json:"project_id"  toml:"project_id"`
 	ParentID    *int64    `json:"parent_id"   toml:"parent_id"`
 	Labels      *[]string `json:"labels"      toml:"labels"`
@@ -48,7 +61,7 @@ type TaskUpdateRequest struct {
 	Description *string   `json:"description" toml:"description"`
 	Due         *Due      `json:"due"         toml:"due"`
 	Duration    *Duration `json:"duration"    toml:"duration"`
-	Priority    *int      `json:"priority"    toml:"priority"`
+	Priority    *Priority `json:"priority"    toml:"priority"`
 	ProjectID   *int64    `json:"project_id"  toml:"project_id"`
 	ParentID    *int64    `json:"parent_id"   toml:"parent_id"`
 	ChildOrder  *int      `json:"child_order" toml:"child_order"`
@@ -113,7 +126,10 @@ func (r *TaskCreationRequest) Patch(task *Task) {
 	}
 
 	if r.Labels != nil {
-		task.Labels = *r.Labels
+		task.Labels = make([]*Label, len(*r.Labels))
+		for i, l := range *r.Labels {
+			task.Labels[i] = &Label{Name: l}
+		}
 	}
 }
 
@@ -151,6 +167,9 @@ func (r *TaskUpdateRequest) Patch(task *Task) {
 	}
 
 	if r.Labels != nil {
-		task.Labels = *r.Labels
+		task.Labels = make([]*Label, len(*r.Labels))
+		for i, l := range *r.Labels {
+			task.Labels[i] = &Label{Name: l}
+		}
 	}
 }

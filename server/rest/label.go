@@ -47,7 +47,7 @@ func (h *handler) getLabel(c *fiber.Ctx) error {
 			JSON(fiber.Map{"parser": err.Error()})
 	}
 
-	label, err := h.GetLabelByID(userID, id)
+	label, err := h.GetLabelByID(id, userID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"db": err.Error()})
@@ -83,7 +83,7 @@ func (h *handler) updateLabel(c *fiber.Ctx) error {
 			JSON(fiber.Map{"parser": err.Error()})
 	}
 
-	label, err := h.GetLabelByID(userID, id)
+	label, err := h.GetLabelByID(id, userID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"db": err.Error()})
@@ -109,13 +109,12 @@ func (h *handler) deleteLabel(c *fiber.Ctx) error {
 			JSON(fiber.Map{"parser": err.Error()})
 	}
 
-	label, err := h.GetLabelByID(userID, id)
-	if err != nil {
+	if _, err := h.GetLabelByID(id, userID); err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"db": err.Error()})
 	}
 
-	if err := h.DeleteLabel(label); err != nil {
+	if err := h.DeleteLabel(id, userID); err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"db": err.Error()})
 	}

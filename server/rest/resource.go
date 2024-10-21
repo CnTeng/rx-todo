@@ -26,7 +26,7 @@ func (h *handler) syncResources(c *fiber.Ctx) error {
 	if req.LabelSyncedAt == nil {
 		labels, err = h.GetLabels(userID)
 	} else {
-		labels, err = h.GetLabelsByUpdateTime(userID, req.LabelSyncedAt)
+		labels, err = h.GetLabelsByUpdateTime(req.LabelSyncedAt, userID)
 	}
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).

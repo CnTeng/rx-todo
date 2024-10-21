@@ -88,32 +88,6 @@ CREATE TABLE task_labels (
   FOREIGN KEY (label_id) REFERENCES labels (id) ON DELETE CASCADE
 );
 
-CREATE VIEW task_with_labels AS
-SELECT
-  tasks.id,
-  tasks.user_id,
-  tasks.name,
-  tasks.description,
-  tasks.due,
-  tasks.duration,
-  tasks.priority,
-  tasks.project_id,
-  tasks.parent_id,
-  tasks.child_order,
-  tasks.done,
-  tasks.done_at,
-  tasks.archived,
-  tasks.archived_at,
-  tasks.created_at,
-  tasks.updated_at,
-  array_remove(array_agg(labels.name), NULL) AS labels
-FROM
-  tasks
-  LEFT JOIN task_labels ON tasks.id = task_labels.task_id
-  LEFT JOIN labels ON task_labels.label_id = labels.id
-GROUP BY
-  tasks.id;
-
 CREATE TABLE reminders (
   id bigserial,
   user_id bigint NOT NULL,
@@ -139,3 +113,46 @@ CREATE TABLE deletion_log (
 );
 
 CREATE INDEX deletion_log_deleted_at_idx ON deletion_log (deleted_at);
+
+CREATE VIEW tasks_with_sub_tasks AS
+WITH
+  task_counts AS (
+    SELECT
+      parent_id,
+      user_id,
+      count(*) AS total_tasks,
+      count(
+        CASE
+          WHEN done THEN 1
+          ELSE NULL
+        END
+      ) AS done_tasks
+    FROM
+      tasks
+    GROUP BY
+      parent_id,
+      user_id
+  )
+SELECT
+  tasks.id,
+  tasks.user_id,
+  tasks.name,
+  tasks.description,
+  tasks.due,
+  tasks.duration,
+  tasks.priority,
+  tasks.project_id,
+  tasks.parent_id,
+  tasks.child_order,
+  coalesce(tc.total_tasks, 0) AS total_tasks,
+  coalesce(tc.done_tasks, 0) AS done_tasks,
+  tasks.done,
+  tasks.done_at,
+  tasks.archived,
+  tasks.archived_at,
+  tasks.created_at,
+  tasks.updated_at
+FROM
+  tasks
+  LEFT JOIN task_counts tc ON tasks.id = tc.parent_id
+  AND tasks.user_id = tc.user_id;

@@ -25,6 +25,9 @@ var (
 	//go:embed sql/label_get_by_updated_at.sql
 	getLabelsByUpdateTimeQuery string
 
+	//go:embed sql/label_get_by_task_id.sql
+	getLabelsByTaskIDQuery string
+
 	//go:embed sql/label_update.sql
 	updateLabelQuery string
 
@@ -45,10 +48,14 @@ func (db *DB) CreateLabel(label *model.Label) (*model.Label, error) {
 	return label, nil
 }
 
-func (db *DB) GetLabelByID(userID, id int64) (*model.Label, error) {
-	label := new(model.Label)
+func (db *DB) GetLabelByID(id, userID int64) (*model.Label, error) {
+	label := &model.Label{}
 
-	if err := db.QueryRow(getLabelByIDQuery, id, userID).Scan(
+	if err := db.QueryRow(
+		getLabelByIDQuery,
+		id,
+		userID,
+	).Scan(
 		&label.ID,
 		&label.UserID,
 		&label.Name,
@@ -62,8 +69,8 @@ func (db *DB) GetLabelByID(userID, id int64) (*model.Label, error) {
 	return label, nil
 }
 
-func (db *DB) GetLabelByName(userID int64, name string) (*model.Label, error) {
-	label := new(model.Label)
+func (db *DB) GetLabelByName(name string, userID int64) (*model.Label, error) {
+	label := &model.Label{}
 
 	if err := db.QueryRow(
 		getLabelByNameQuery,
@@ -84,7 +91,7 @@ func (db *DB) GetLabelByName(userID int64, name string) (*model.Label, error) {
 }
 
 func (db *DB) GetLabels(userID int64) ([]*model.Label, error) {
-	var labels []*model.Label
+	labels := []*model.Label{}
 
 	rows, err := db.Query(getLabelsQuery, userID)
 	if err != nil {
@@ -105,7 +112,7 @@ func (db *DB) GetLabels(userID int64) ([]*model.Label, error) {
 	return labels, nil
 }
 
-func (db *DB) GetLabelsByUpdateTime(userID int64, updateTime *time.Time) ([]*model.Label, error) {
+func (db *DB) GetLabelsByUpdateTime(updateTime *time.Time, userID int64) ([]*model.Label, error) {
 	var labels []*model.Label
 
 	rows, err := db.Query(getLabelsByUpdateTimeQuery, userID, updateTime)
@@ -127,6 +134,38 @@ func (db *DB) GetLabelsByUpdateTime(userID int64, updateTime *time.Time) ([]*mod
 	return labels, nil
 }
 
+func (db *DB) GetLabelsByTaskID(taskID, userID int64) ([]*model.Label, error) {
+	labels := []*model.Label{}
+
+	rows, err := db.Query(getLabelsByTaskIDQuery, taskID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get task labels: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		label := &model.Label{}
+		if err := rows.Scan(&label.ID); err != nil {
+			return nil, fmt.Errorf("failed to get task labels: %w", err)
+		}
+
+		if err := db.QueryRow(getLabelByIDQuery, label.ID, userID).Scan(
+			&label.ID,
+			&label.UserID,
+			&label.Name,
+			&label.Color,
+			&label.CreatedAt,
+			&label.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to get label: %w", err)
+		}
+
+		labels = append(labels, label)
+	}
+
+	return labels, nil
+}
+
 func (db *DB) UpdateLabel(label *model.Label) (*model.Label, error) {
 	if err := db.QueryRow(
 		updateLabelQuery,
@@ -141,13 +180,13 @@ func (db *DB) UpdateLabel(label *model.Label) (*model.Label, error) {
 	return label, nil
 }
 
-func (db *DB) DeleteLabel(label *model.Label) error {
+func (db *DB) DeleteLabel(id, userID int64) error {
 	return db.withTx(func(tx *sql.Tx) error {
-		if _, err := tx.Exec(deleteLabelQuery, label.ID, label.UserID); err != nil {
+		if _, err := tx.Exec(deleteLabelQuery, id, userID); err != nil {
 			return fmt.Errorf("failed to delete label: %w", err)
 		}
 
-		if _, err := tx.Exec(createDeletionLogQuery, label.UserID, "label", label.ID); err != nil {
+		if _, err := tx.Exec(createDeletionLogQuery, userID, "label", id); err != nil {
 			return fmt.Errorf("failed to create deletion log: %w", err)
 		}
 		return nil
