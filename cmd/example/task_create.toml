@@ -1,0 +1,6 @@
+# name = 'example'     # mandatory
+# description = 'example' # optional
+# priority = 1            # optional
+# project_id = 1          # optional
+# parent_id = 1           # optional
+# labels = ['example']    # optional

@@ -7,7 +7,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "content": "test",
+  "content": "test2",
   "description": "test",
   "due": {
     "date": "2024-07-20T00:00:00Z",
@@ -18,7 +18,8 @@ Accept: application/json
     "unit": "minute"
   },
   "labels": ["test"],
-  "priority": 1
+  "priority": 1,
+  "parent_id": 26
 }
 
 ###
@@ -41,8 +42,16 @@ Accept: application/json
     "unit": "minute"
   },
   "labels": ["test", "test1"],
-  "priority": 2
+  "priority": 2,
+  "done": true
 }
+
+###
+
+# Close a task
+PUT http://localhost:8080/tasks/26/close HTTP/1.1
+Authorization: Bearer {{token}}
+Accept: application/json
 
 ###
 
