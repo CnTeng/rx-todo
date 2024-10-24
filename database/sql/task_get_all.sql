@@ -10,7 +10,7 @@ SELECT
   priority,
   project_id,
   parent_id,
-  child_order,
+  "position",
   total_tasks,
   done_tasks,
   done,

@@ -1,10 +1,8 @@
-UPDATE projects
+UPDATE tasks
 SET
-  name = $3,
-  description = $4,
+  project_id = $3,
+  parent_id = $4,
   "position" = $5,
-  inbox = $6,
-  favorite = $7,
   updated_at = now()
 WHERE
   id = $1

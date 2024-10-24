@@ -25,7 +25,7 @@ CREATE TABLE projects (
   user_id bigint NOT NULL,
   name text NOT NULL,
   description text NOT NULL DEFAULT '',
-  child_order bigint NOT NULL UNIQUE,
+  "position" double precision NOT NULL UNIQUE,
   inbox boolean NOT NULL DEFAULT FALSE,
   favorite boolean NOT NULL DEFAULT FALSE,
   archived boolean NOT NULL DEFAULT FALSE,
@@ -51,7 +51,7 @@ CREATE TABLE tasks (
   priority int NOT NULL DEFAULT 0,
   project_id bigint,
   parent_id bigint,
-  child_order bigint NOT NULL DEFAULT 0,
+  "position" double precision NOT NULL DEFAULT 0,
   done boolean NOT NULL DEFAULT FALSE,
   done_at timestamp,
   archived boolean NOT NULL DEFAULT FALSE,
@@ -62,8 +62,8 @@ CREATE TABLE tasks (
   FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
   FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,
   FOREIGN KEY (parent_id) REFERENCES tasks (id) ON DELETE CASCADE,
-  UNIQUE (project_id, child_order),
-  UNIQUE (parent_id, child_order)
+  UNIQUE (project_id, "position"),
+  UNIQUE (parent_id, "position")
 );
 
 CREATE TABLE labels (
@@ -141,7 +141,7 @@ SELECT
   tasks.priority,
   tasks.project_id,
   tasks.parent_id,
-  tasks.child_order,
+  tasks.position,
   coalesce(tc.total_tasks, 0) AS total_tasks,
   coalesce(tc.done_tasks, 0) AS done_tasks,
   tasks.done,
@@ -179,7 +179,7 @@ SELECT
   projects.user_id,
   projects.name,
   projects.description,
-  projects.child_order,
+  projects.position,
   projects.inbox,
   projects.favorite,
   coalesce(tc.total_tasks, 0) AS total_tasks,

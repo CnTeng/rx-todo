@@ -1,3 +1,22 @@
+WITH
+  new_positions AS (
+    SELECT
+      coalesce(floor(max("position")) + 1, 0) AS new_position
+    FROM
+      tasks
+    WHERE
+      user_id = $1
+      AND (
+        (
+          $9 IS NOT NULL
+          AND project_id = $9
+        )
+        OR (
+          $10 IS NOT NULL
+          AND parent_id = $10
+        )
+      )
+  )
 INSERT INTO
   tasks (
     user_id,
@@ -8,7 +27,7 @@ INSERT INTO
     priority,
     project_id,
     parent_id,
-    child_order
+    "position"
   )
 VALUES
   (
@@ -20,9 +39,15 @@ VALUES
     $8,
     $9,
     $10,
-    $11
+    (
+      SELECT
+        new_position
+      FROM
+        new_positions
+    )
   )
 RETURNING
   id,
+  "position",
   created_at,
   updated_at

@@ -1,5 +1,5 @@
 SELECT
-  coalesce(max(child_order) + 1)
+  min("position") / 2
 FROM
   projects
 WHERE

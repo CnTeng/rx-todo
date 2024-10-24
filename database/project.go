@@ -22,11 +22,17 @@ var (
 	//go:embed sql/project_get_by_updated_at.sql
 	getProjectsByUpdateTimeQuery string
 
-	//go:embed sql/project_get_next_order.sql
-	getProjectNextOrderQuery string
+	//go:embed sql/project_get_new_position.sql
+	getProjectNewPositionQuery string
+
+	//go:embed sql/project_get_top_position.sql
+	getProjectTopPositionQuery string
 
 	//go:embed sql/project_update.sql
 	updateProjectQuery string
+
+	//go:embed sql/project_update_position.sql
+	updateProjectPositionQuery string
 
 	//go:embed sql/project_update_status.sql
 	updateProjectStatusQuery string
@@ -36,34 +42,25 @@ var (
 )
 
 func (db *DB) CreateProject(project *model.Project) (*model.Project, error) {
-	return project, db.withTx(func(tx *sql.Tx) error {
-		if err := tx.QueryRow(
-			getProjectNextOrderQuery,
-			project.UserID,
-		).Scan(&project.ChildOrder); err != nil {
-			return fmt.Errorf("failed to get project child_order: %w", err)
-		}
+	if err := db.QueryRow(
+		createProjectQuery,
+		project.UserID,
+		project.Name,
+		project.Description,
+		project.Favorite,
+	).Scan(
+		&project.ID,
+		&project.Position,
+		&project.Inbox,
+		&project.Archived,
+		&project.ArchivedAt,
+		&project.CreatedAt,
+		&project.UpdatedAt,
+	); err != nil {
+		return nil, fmt.Errorf("failed to create project: %w", err)
+	}
 
-		if err := tx.QueryRow(
-			createProjectQuery,
-			project.UserID,
-			project.Name,
-			project.Description,
-			project.ChildOrder,
-			project.Favorite,
-		).Scan(
-			&project.ID,
-			&project.Inbox,
-			&project.Archived,
-			&project.ArchivedAt,
-			&project.CreatedAt,
-			&project.UpdatedAt,
-		); err != nil {
-			return fmt.Errorf("failed to create project: %w", err)
-		}
-
-		return nil
-	})
+	return project, nil
 }
 
 func (db *DB) GetProjectByID(id, userID int64) (*model.Project, error) {
@@ -78,7 +75,7 @@ func (db *DB) GetProjectByID(id, userID int64) (*model.Project, error) {
 		&project.UserID,
 		&project.Name,
 		&project.Description,
-		&project.ChildOrder,
+		&project.Position,
 		&project.Inbox,
 		&project.Favorite,
 		&project.SubTasks.Total,
@@ -111,7 +108,7 @@ func (db *DB) getProjects(query string, args ...any) ([]*model.Project, error) {
 			&project.UserID,
 			&project.Name,
 			&project.Description,
-			&project.ChildOrder,
+			&project.Position,
 			&project.Inbox,
 			&project.Favorite,
 			&project.SubTasks.Total,
@@ -145,7 +142,7 @@ func (db *DB) UpdateProject(project *model.Project) (*model.Project, error) {
 		project.UserID,
 		project.Name,
 		project.Description,
-		project.ChildOrder,
+		project.Position,
 		project.Inbox,
 		project.Favorite,
 	).Scan(&project.UpdatedAt); err != nil {
@@ -155,22 +152,31 @@ func (db *DB) UpdateProject(project *model.Project) (*model.Project, error) {
 	return project, nil
 }
 
-func (db *DB) UpdateProjects(projects []*model.Project) ([]*model.Project, error) {
-	return projects, db.withTx(func(tx *sql.Tx) error {
-		for _, project := range projects {
-			err := tx.QueryRow(
-				updateProjectQuery,
-				project.ID,
+func (db *DB) UpdateProjectPosition(project *model.Project, previousID int64) (*model.Project, error) {
+	return project, db.withTx(func(tx *sql.Tx) error {
+		if previousID == 0 {
+			if err := db.QueryRow(
+				getProjectTopPositionQuery,
 				project.UserID,
-				project.Name,
-				project.Description,
-				project.ChildOrder,
-				project.Inbox,
-				project.Favorite,
-			).Scan(&project.UpdatedAt)
-			if err != nil {
-				return fmt.Errorf("failed to update projects: %w", err)
+			).Scan(&project.Position); err != nil {
+				return fmt.Errorf("failed to get project top position: %w", err)
 			}
+		} else {
+			if err := db.QueryRow(
+				getProjectNewPositionQuery,
+				previousID,
+				project.UserID,
+			).Scan(&project.Position); err != nil {
+				return fmt.Errorf("failed to get project new position: %w", err)
+			}
+		}
+
+		if err := tx.QueryRow(
+			updateProjectPositionQuery,
+			project.ID,
+			project.UserID,
+		).Scan(&project.UpdatedAt); err != nil {
+			return fmt.Errorf("failed to update project position: %w", err)
 		}
 
 		return nil
@@ -183,7 +189,10 @@ func (db *DB) UpdateProjectStatus(project *model.Project) (*model.Project, error
 		project.ID,
 		project.UserID,
 		project.Archived,
-	).Scan(&project.ArchivedAt); err != nil {
+	).Scan(
+		&project.ArchivedAt,
+		&project.UpdatedAt,
+	); err != nil {
 		return nil, fmt.Errorf("failed to update project status: %w", err)
 	}
 	return project, nil

@@ -3,7 +3,7 @@ SELECT
   user_id,
   name,
   description,
-  child_order,
+  "position",
   inbox,
   favorite,
   total_tasks,

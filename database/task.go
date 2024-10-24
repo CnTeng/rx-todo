@@ -28,14 +28,17 @@ var (
 	//go:embed sql/task_get_by_updated_at.sql
 	getTasksByUpdateTimeQuery string
 
-	//go:embed sql/task_get_next_order_by_project_id.sql
-	getTaskNextOrderQueryByProjectID string
+	//go:embed sql/task_get_new_position.sql
+	getTaskNewPositionQuery string
 
-	//go:embed sql/task_get_next_order_by_parent_id.sql
-	getTaskNextOrderQueryByParentID string
+	//go:embed sql/task_get_top_position.sql
+	getTaskTopPositionQuery string
 
 	//go:embed sql/task_update.sql
 	updateTaskQuery string
+
+	//go:embed sql/task_update_position.sql
+	updateTaskPositionQuery string
 
 	//go:embed sql/task_update_done.sql
 	updateTaskDoneQuery string
@@ -64,24 +67,6 @@ func (db *DB) CreateTask(task *model.Task) (*model.Task, error) {
 	}
 
 	return task, db.withTx(func(tx *sql.Tx) error {
-		if task.ParentID != nil {
-			if err := tx.QueryRow(
-				getTaskNextOrderQueryByParentID,
-				task.UserID,
-				task.ParentID,
-			).Scan(&task.ChildOrder); err != nil {
-				return fmt.Errorf("failed to get task child_order by parent_id: %w", err)
-			}
-		} else {
-			if err := tx.QueryRow(
-				getTaskNextOrderQueryByProjectID,
-				task.UserID,
-				task.ProjectID,
-			).Scan(&task.ChildOrder); err != nil {
-				return fmt.Errorf("failed to get task child_order by project_id: %w", err)
-			}
-		}
-
 		if err := tx.QueryRow(
 			createTaskQuery,
 			task.UserID,
@@ -94,7 +79,7 @@ func (db *DB) CreateTask(task *model.Task) (*model.Task, error) {
 			task.Priority,
 			task.ProjectID,
 			task.ParentID,
-			task.ChildOrder,
+			task.Position,
 		).Scan(&task.ID, &task.CreatedAt, &task.UpdatedAt); err != nil {
 			return fmt.Errorf("failed to create task: %w", err)
 		}
@@ -138,7 +123,7 @@ func (db *DB) GetTaskByID(userID, id int64) (*model.Task, error) {
 		&task.Priority,
 		&task.ProjectID,
 		&task.ParentID,
-		&task.ChildOrder,
+		&task.Position,
 		&task.SubTasks.Total,
 		&task.SubTasks.Done,
 		&task.Done,
@@ -197,7 +182,7 @@ func (db *DB) getTasks(query string, args ...any) ([]*model.Task, error) {
 			&task.Priority,
 			&task.ProjectID,
 			&task.ParentID,
-			&task.ChildOrder,
+			&task.Position,
 			&task.SubTasks.Total,
 			&task.SubTasks.Done,
 			&task.Done,
@@ -251,9 +236,6 @@ func (db *DB) UpdateTask(task *model.Task) (*model.Task, error) {
 			task.Duration.Amount,
 			task.Duration.Unit,
 			task.Priority,
-			task.ProjectID,
-			task.ParentID,
-			task.ChildOrder,
 		).Scan(&task.UpdatedAt); err != nil {
 			return fmt.Errorf("failed to update task: %w", err)
 		}
@@ -271,6 +253,42 @@ func (db *DB) UpdateTask(task *model.Task) (*model.Task, error) {
 			); err != nil {
 				return fmt.Errorf("failed to create task labels: %w", err)
 			}
+		}
+
+		return nil
+	})
+}
+
+func (db *DB) UpdateTaskPosition(task *model.Task, previousID int64) (*model.Task, error) {
+	return task, db.withTx(func(tx *sql.Tx) error {
+		if previousID == 0 {
+			if err := tx.QueryRow(
+				getTaskTopPositionQuery,
+				task.UserID,
+			).Scan(&task.Position); err != nil {
+				return fmt.Errorf("failed to get project top position: %w", err)
+			}
+		} else {
+			if err := tx.QueryRow(
+				getTaskNewPositionQuery,
+				previousID,
+				task.UserID,
+				task.ProjectID,
+				task.ParentID,
+			).Scan(&task.Position); err != nil {
+				return fmt.Errorf("failed to get project new position: %w", err)
+			}
+		}
+
+		if err := tx.QueryRow(
+			updateTaskPositionQuery,
+			task.ID,
+			task.UserID,
+			task.ProjectID,
+			task.ParentID,
+			task.Position,
+		).Scan(&task.UpdatedAt); err != nil {
+			return fmt.Errorf("failed to update project position: %w", err)
 		}
 
 		return nil

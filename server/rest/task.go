@@ -14,6 +14,7 @@ func (h *handler) registerTaskRoutes() {
 	group.Get(":id", h.getTask)
 	group.Get("", h.getTasks)
 	group.Put(":id", h.updateTask)
+	group.Put(":id/move", h.moveTask)
 	group.Put(":id/open", h.openTask)
 	group.Put(":id/close", h.closeTask)
 	group.Put(":id/archive", h.archiveTask)
@@ -228,6 +229,46 @@ func (h *handler) unarchiveTask(c *fiber.Ctx) error {
 	task, err = h.UpdateTaskArchivedStatus(task)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(task)
+}
+
+func (h *handler) moveTask(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int64)
+
+	previousID := int64(c.QueryInt("previous_id"))
+	projectID := int64(c.QueryInt("project_id"))
+	parentID := int64(c.QueryInt("parent_id"))
+
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	req := &model.TaskMoveRequest{
+		PreviousID: nilIfZero(previousID),
+		ProjectID:  nilIfZero(projectID),
+		ParentID:   nilIfZero(parentID),
+	}
+	if err := model.Validate(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	task, err := h.GetTaskByID(userID, id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
+	} else {
+		req.Patch(task)
+	}
+
+	task, err = h.UpdateTaskPosition(task, previousID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 

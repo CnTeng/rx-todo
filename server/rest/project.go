@@ -15,8 +15,8 @@ func (h *handler) registerProjectRoutes() {
 	group.Get(":id", h.getProject)
 	group.Get("", h.getProjects)
 	group.Get("sync", h.syncProjects)
-	group.Put("order", h.reorderProject)
 	group.Put(":id", h.updateProject)
+	group.Put(":id/move", h.moveProject)
 	group.Put(":id/archive", h.archiveProject)
 	group.Put(":id/unarchive", h.unarchiveProject)
 	group.Delete(":id", h.deleteProject)
@@ -122,35 +122,30 @@ func (h *handler) updateProject(c *fiber.Ctx) error {
 	return c.JSON(project)
 }
 
-func (h *handler) reorderProject(c *fiber.Ctx) error {
+func (h *handler) moveProject(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(int64)
 
-	req := &model.ProjectReorderRequest{}
-	if err := h.parse(c, req); err != nil {
+	previousID := int64(c.QueryInt("previous_id"))
+
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
 		return c.Status(fiber.StatusBadRequest).
-			JSON(fiber.Map{"error": "error"})
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	projects := []*model.Project{}
-	for _, child := range req.Children {
-		project, err := h.GetProjectByID(child.ID, userID)
-		if err != nil {
-			return c.Status(fiber.StatusNotFound).
-				JSON(fiber.Map{"error": err.Error()})
-		} else {
-			child.Patch(project)
-		}
-
-		projects = append(projects, project)
+	project, err := h.GetProjectByID(id, userID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	projects, err := h.UpdateProjects(projects)
+	project, err = h.UpdateProjectPosition(project, previousID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.JSON(projects)
+	return c.JSON(project)
 }
 
 func (h *handler) archiveProject(c *fiber.Ctx) error {

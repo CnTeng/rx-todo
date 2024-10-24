@@ -23,6 +23,13 @@ func (*handler) parse(c *fiber.Ctx, req any) error {
 	return nil
 }
 
+func nilIfZero(value int64) *int64 {
+	if value == 0 {
+		return nil
+	}
+	return &value
+}
+
 func Serve(db *database.DB, app *fiber.App) {
 	h := handler{DB: db, App: app}
 
