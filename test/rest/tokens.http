@@ -1,7 +1,7 @@
 @token=fYORx5uRpBPyObqU84DyOkHtDIheBB2fyARsOJ5Veqo=
 
 # Create a new token
-POST http://localhost:8080/token HTTP/1.1
+POST http://localhost:8080/v1/token HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 
@@ -13,14 +13,14 @@ Content-Type: application/json
 ###
 
 # Get tokens
-GET http://localhost:8080/tokens HTTP/1.1
+GET http://localhost:8080/v1/tokens HTTP/1.1
 Accept: application/json
 Authorization: Bearer {{token}}
 
 ###
 
 # Update a tokens
-PUT http://localhost:8080/tokens/29 HTTP/1.1
+PUT http://localhost:8080/v1/tokens/29 HTTP/1.1
 Authorization: {{token}}
 Accept: application/json
 
@@ -32,6 +32,6 @@ Accept: application/json
 ###
 
 # Delete a label
-DELETE http://localhost:8080/tokens/8 HTTP/1.1
+DELETE http://localhost:8080/v1/tokens/8 HTTP/1.1
 Authorization: {{token}}
 Accept: application/json

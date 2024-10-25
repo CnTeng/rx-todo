@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/CnTeng/rx-todo/model"
+	"github.com/CnTeng/rx-todo/internal/model"
 )
 
 type request struct {
@@ -17,15 +17,14 @@ type request struct {
 	body     any
 }
 
-func newRequest(endpoint, token string, body any) *request {
+func NewRequest(endpoint, token string) *request {
 	return &request{
 		endpoint: endpoint,
 		token:    token,
-		body:     body,
 	}
 }
 
-func (r *request) withPath(path string) *request {
+func (r *request) WithPath(path string) *request {
 	if strings.HasPrefix(path, "/") {
 		r.endpoint += path
 	} else {
@@ -35,27 +34,46 @@ func (r *request) withPath(path string) *request {
 	return r
 }
 
-func (r *request) withID(id int64) *request {
-	return r.withPath(strconv.FormatInt(id, 10))
+func (r *request) WithID(id int64) *request {
+	return r.WithPath(strconv.FormatInt(id, 10))
 }
 
-func (r *request) get() (io.ReadCloser, error) {
-	return r.execute(http.MethodGet)
+func (r *request) WithParameter(key string, value *int64) *request {
+	if value == nil {
+		return r
+	}
+
+	if strings.Contains(r.endpoint, "?") {
+		r.endpoint += "&" + key + "=" + strconv.FormatInt(*value, 10)
+	} else {
+		r.endpoint += "?" + key + "=" + strconv.FormatInt(*value, 10)
+	}
+
+	return r
 }
 
-func (r *request) post() (io.ReadCloser, error) {
-	return r.execute(http.MethodPost)
+func (r *request) WithBody(body any) *request {
+	r.body = body
+	return r
 }
 
-func (r *request) put() (io.ReadCloser, error) {
-	return r.execute(http.MethodPut)
+func (r *request) Get() (io.ReadCloser, error) {
+	return r.Execute(http.MethodGet)
 }
 
-func (r *request) delete() (io.ReadCloser, error) {
-	return r.execute(http.MethodDelete)
+func (r *request) Post() (io.ReadCloser, error) {
+	return r.Execute(http.MethodPost)
 }
 
-func (r *request) execute(method string) (io.ReadCloser, error) {
+func (r *request) Put() (io.ReadCloser, error) {
+	return r.Execute(http.MethodPut)
+}
+
+func (r *request) Delete() (io.ReadCloser, error) {
+	return r.Execute(http.MethodDelete)
+}
+
+func (r *request) Execute(method string) (io.ReadCloser, error) {
 	b, err := r.marshalBody()
 	if err != nil {
 		return nil, err

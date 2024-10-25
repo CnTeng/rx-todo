@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/CnTeng/rx-todo/model"
+	"github.com/CnTeng/rx-todo/internal/model"
 	"github.com/adrg/xdg"
 )
 
 type storage struct {
 	Path string
-	*model.Resources
+	*resources
 }
 
 func newStorage(path string) (*storage, error) {
@@ -21,7 +21,7 @@ func newStorage(path string) (*storage, error) {
 
 	return &storage{
 		Path:      path,
-		Resources: model.NewResources(),
+		resources: newResources(),
 	}, nil
 }
 
