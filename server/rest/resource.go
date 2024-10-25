@@ -50,5 +50,5 @@ func (h *handler) syncResources(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.JSON(model.NewResourceSyncResponse(labels, projects, reminders, tasks, user))
+	return c.JSON(model.NewResources(labels, projects, reminders, tasks, user))
 }

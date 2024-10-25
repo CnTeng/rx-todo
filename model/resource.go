@@ -38,15 +38,7 @@ func getSyncStatus[T Resource](res []T) *time.Time {
 	return &time
 }
 
-type ResourceSyncRequest struct {
-	LabelSyncedAt    *time.Time `json:"label_synced_at,omitempty"`
-	ProjectSyncedAt  *time.Time `json:"project_synced_at,omitempty"`
-	ReminderSyncedAt *time.Time `json:"reminder_synced_at,omitempty"`
-	TaskSyncedAt     *time.Time `json:"task_synced_at,omitempty"`
-	UserSyncedAt     *time.Time `json:"user_synced_at,omitempty"`
-}
-
-type ResourceSyncResponse struct {
+type Resources struct {
 	Labels     map[int64]*Label    `json:"labels"`
 	Projects   map[int64]*Project  `json:"projects"`
 	Reminders  map[int64]*Reminder `json:"reminders"`
@@ -55,8 +47,16 @@ type ResourceSyncResponse struct {
 	SyncStatus ResourceSyncRequest `json:"sync_status,omitempty"`
 }
 
-func NewResourceSyncResponse(args ...any) *ResourceSyncResponse {
-	response := &ResourceSyncResponse{
+type ResourceSyncRequest struct {
+	LabelSyncedAt    *time.Time `json:"label_synced_at,omitempty"`
+	ProjectSyncedAt  *time.Time `json:"project_synced_at,omitempty"`
+	ReminderSyncedAt *time.Time `json:"reminder_synced_at,omitempty"`
+	TaskSyncedAt     *time.Time `json:"task_synced_at,omitempty"`
+	UserSyncedAt     *time.Time `json:"user_synced_at,omitempty"`
+}
+
+func NewResources(args ...any) *Resources {
+	response := &Resources{
 		Labels:    make(map[int64]*Label),
 		Projects:  make(map[int64]*Project),
 		Reminders: make(map[int64]*Reminder),
