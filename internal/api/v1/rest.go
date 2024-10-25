@@ -8,7 +8,7 @@ import (
 
 type handler struct {
 	*database.DB
-	*fiber.App
+	fiber.Router
 }
 
 func (*handler) parse(c *fiber.Ctx, req any) error {
@@ -30,8 +30,8 @@ func nilIfZero(value int64) *int64 {
 	return &value
 }
 
-func Serve(db *database.DB, app *fiber.App) {
-	h := handler{DB: db, App: app}
+func RegisterV1Routes(db *database.DB, router fiber.Router) {
+	h := handler{DB: db, Router: router}
 
 	h.registerProjectRoutes()
 	h.registerLabelRoutes()

@@ -25,7 +25,8 @@ func NewServer(db *database.DB) *Server {
 	app.Use(logger.New(), recover.New())
 	app.Use(middleware.AuthMiddleware(db))
 
-	api.Serve(db, app)
+	v1 := app.Group("/v1")
+	api.RegisterV1Routes(db, v1)
 
 	return &Server{app, db}
 }

@@ -1,7 +1,7 @@
 @token=fYORx5uRpBPyObqU84DyOkHtDIheBB2fyARsOJ5Veqo=
 
 # Get all
-POST http://localhost:8080/resources/sync HTTP/1.1
+POST http://localhost:8080/v1/resources/sync HTTP/1.1
 Authorization: Bearer {{token}}
 Content-Type: application/json
 Accept: application/json

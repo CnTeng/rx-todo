@@ -1,7 +1,7 @@
 @token=fYORx5uRpBPyObqU84DyOkHtDIheBB2fyARsOJ5Veqo=
 
 # Create a new task
-POST http://localhost:8080/tasks HTTP/1.1
+POST http://localhost:8080/v1/tasks HTTP/1.1
 Authorization: Bearer {{token}}
 Content-Type: application/json
 Accept: application/json
@@ -25,7 +25,7 @@ Accept: application/json
 ###
 
 # Update a task
-PUT http://localhost:8080/tasks/27 HTTP/1.1
+PUT http://localhost:8080/v1/tasks/27 HTTP/1.1
 Authorization: Bearer {{token}}
 Content-Type: application/json
 Accept: application/json
@@ -49,26 +49,26 @@ Accept: application/json
 ###
 
 # Close a task
-PUT http://localhost:8080/tasks/26/close HTTP/1.1
+PUT http://localhost:8080/v1/tasks/26/close HTTP/1.1
 Authorization: Bearer {{token}}
 Accept: application/json
 
 ###
 
 # Get all tasks
-GET http://localhost:8080/tasks HTTP/1.1
+GET http://localhost:8080/v1/tasks HTTP/1.1
 Authorization: Bearer {{token}}
 Accept: application/json
 
 ###
 
 # Get a task
-GET http://localhost:8080/tasks/17 HTTP/1.1
+GET http://localhost:8080/v1/tasks/17 HTTP/1.1
 Authorization: Bearer {{token}}
 Accept: application/json
 
 ###
 
 # Delete a task
-DELETE http://localhost:8080/tasks/21 HTTP/1.1
+DELETE http://localhost:8080/v1/tasks/21 HTTP/1.1
 Authorization: Bearer {{token}}
