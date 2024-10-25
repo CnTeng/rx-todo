@@ -3,13 +3,12 @@ module github.com/CnTeng/rx-todo
 go 1.22.5
 
 require (
-	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
-	github.com/adrg/xdg v0.5.0
-	github.com/fatih/color v1.17.1-0.20241003070628-1c8d8706604e
+	github.com/adrg/xdg v0.5.1
+	github.com/fatih/color v1.18.0
 	github.com/go-playground/validator/v10 v10.22.1
 	github.com/gofiber/fiber/v2 v2.52.5
+	github.com/jedib0t/go-pretty/v6 v6.6.1
 	github.com/lib/pq v1.10.9
-	github.com/rodaine/table v1.3.0
 	github.com/spf13/cobra v1.8.1
 	golang.org/x/crypto v0.28.0
 	golang.org/x/exp/jsonrpc2 v0.0.0-20241009180824-f66d83c29e7c

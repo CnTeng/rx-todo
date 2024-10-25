@@ -2,9 +2,12 @@ package daemon
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 
 	"github.com/CnTeng/rx-todo/client"
 	"github.com/CnTeng/rx-todo/rpc"
+	"golang.org/x/exp/jsonrpc2"
 )
 
 type clientKeyType string
@@ -30,6 +33,23 @@ func (d *Daemon) Serve() error {
 
 	registerLabelHandles(s)
 	registerTaskHandles(s)
+	registerProjectHandles(s)
 
 	return s.Serve(ctx)
+}
+
+func simpleHandle(ctx context.Context, req *jsonrpc2.Request, action func(*client.Client, int64) (any, error)) (any, error) {
+	r := &struct {
+		ID int64 `json:"id"`
+	}{}
+	if err := json.Unmarshal(req.Params, &r); err != nil {
+		return nil, err
+	}
+
+	c, ok := ctx.Value(clientKey).(*client.Client)
+	if !ok {
+		return nil, errors.New("client not found in context")
+	}
+
+	return action(c, r.ID)
 }

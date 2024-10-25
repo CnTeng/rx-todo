@@ -10,7 +10,7 @@ import (
 
 type storage struct {
 	Path string
-	*model.Resources
+	*resources
 }
 
 func newStorage(path string) (*storage, error) {
@@ -21,7 +21,7 @@ func newStorage(path string) (*storage, error) {
 
 	return &storage{
 		Path:      path,
-		Resources: model.NewResources(),
+		resources: newResources(),
 	}, nil
 }
 

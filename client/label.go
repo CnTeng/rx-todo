@@ -7,9 +7,10 @@ import (
 )
 
 func (c *Client) CreateLabel(r *model.LabelCreationRequest) (*model.Label, error) {
-	request := newRequest(c.Endpoint, c.Token, r)
-
-	response, err := request.withPath("labels").post()
+	response, err := NewRequest(c.Endpoint, c.Token).
+		WithPath("labels").
+		WithBody(r).
+		Post()
 	if err != nil {
 		return nil, err
 	}
@@ -20,11 +21,17 @@ func (c *Client) CreateLabel(r *model.LabelCreationRequest) (*model.Label, error
 		return nil, err
 	}
 
-	if err := c.patch([]*model.Label{label}); err != nil {
+	if err := c.patch(label); err != nil {
 		return nil, err
 	}
 
 	return label, nil
+}
+
+func (c *Client) GetLabel(id int64) *model.Label {
+	label := c.storage.GetLabel(id)
+
+	return label
 }
 
 func (c *Client) GetLabels() []*model.Label {
@@ -34,9 +41,11 @@ func (c *Client) GetLabels() []*model.Label {
 }
 
 func (c *Client) UpdateLabel(r *model.LabelUpdateRequestWithID) (*model.Label, error) {
-	request := newRequest(c.Endpoint, c.Token, r.LabelUpdateRequest)
-
-	response, err := request.withPath("labels").withID(*r.ID).put()
+	response, err := NewRequest(c.Endpoint, c.Token).
+		WithPath("labels").
+		WithID(*r.ID).
+		WithBody(r.LabelUpdateRequest).
+		Put()
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +56,7 @@ func (c *Client) UpdateLabel(r *model.LabelUpdateRequestWithID) (*model.Label, e
 		return nil, err
 	}
 
-	if err := c.patch([]*model.Label{label}); err != nil {
+	if err := c.patch(label); err != nil {
 		return nil, err
 	}
 
@@ -55,16 +64,17 @@ func (c *Client) UpdateLabel(r *model.LabelUpdateRequestWithID) (*model.Label, e
 }
 
 func (c *Client) DeleteLabel(id int64) (*model.Label, error) {
-	request := newRequest(c.Endpoint, c.Token, nil)
-
-	if _, err := request.withPath("labels").withID(id).delete(); err != nil {
+	if _, err := NewRequest(c.Endpoint, c.Token).
+		WithPath("labels").
+		WithID(id).
+		Delete(); err != nil {
 		return nil, err
 	}
 
 	label := c.GetLabel(id)
 	label.Deleted = true
 
-	if err := c.patch([]*model.Label{label}); err != nil {
+	if err := c.patch(label); err != nil {
 		return nil, err
 	}
 

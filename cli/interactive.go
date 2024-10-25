@@ -7,21 +7,21 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-type EditFile struct {
+type interactiveFile struct {
 	content     string
 	description string
 }
 
-func NewEditFile(content any, description string) (*EditFile, error) {
+func newEditFile(content any, description string) (*interactiveFile, error) {
 	c, err := toml.Marshal(content)
 	if err != nil {
 		return nil, err
 	}
 
-	return &EditFile{content: string(c), description: description}, nil
+	return &interactiveFile{content: string(c), description: description}, nil
 }
 
-func (ef *EditFile) ParseContent(context any) error {
+func (ef *interactiveFile) parse() error {
 	tmp, err := os.CreateTemp("", "todo-*.toml")
 	if err != nil {
 		return err
@@ -55,7 +55,20 @@ func (ef *EditFile) ParseContent(context any) error {
 		return err
 	}
 
-	if err := toml.Unmarshal(c, context); err != nil {
+	if err := toml.Unmarshal(c, ef.content); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *cli) StartInteractiveMode(content any, description string) error {
+	edit, err := newEditFile(content, description)
+	if err != nil {
+		return err
+	}
+
+	if err := edit.parse(); err != nil {
 		return err
 	}
 

@@ -69,4 +69,5 @@ func registerLabelHandles(s *rpc.JRPCServer) {
 	s.Register("Label.List", labelListHandle)
 	s.Register("Label.Create", labelCreateHandle)
 	s.Register("Label.Update", labelUpdateHandle)
+	s.Register("Label.Delete", labelDeleteHandle)
 }

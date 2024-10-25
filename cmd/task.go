@@ -2,9 +2,11 @@ package cmd
 
 import (
 	_ "embed"
+	"fmt"
 	"time"
 
 	"github.com/CnTeng/rx-todo/cli"
+	"github.com/CnTeng/rx-todo/client"
 	"github.com/CnTeng/rx-todo/model"
 	"github.com/CnTeng/rx-todo/rpc"
 	"github.com/spf13/cobra"
@@ -14,18 +16,44 @@ import (
 var taskCreateExample string
 
 var taskListCmd = &cobra.Command{
-	Use:     "list",
+	Use:     "list [name] [flags]...",
 	Aliases: []string{"l"},
 	Short:   "List all tasks",
 	Run: func(cmd *cobra.Command, args []string) {
 		c := rpc.NewClient(network, socketPath, 5*time.Second)
 
-		tasks := cli.TaskSlice{}
-		if err := c.Call("Task.List", nil, &tasks); err != nil {
+		tasks := client.TaskSlice{}
+		if err := c.Call("task.list", nil, &tasks); err != nil {
 			cobra.CheckErr(err)
 		}
 
-		cli.NewCLI(cli.Nerd).PrintTasks(tasks.SortByID())
+		projects := client.ProjectSlice{}
+		if err := c.Call("project.list", nil, &projects); err != nil {
+			cobra.CheckErr(err)
+		}
+
+		// Filter by name
+		var name *string
+		if len(args) == 1 {
+			name = &args[0]
+		} else {
+			name = getValue(cmd, cmd.Flags().GetString, "name")
+		}
+		if name != nil {
+			tasks = tasks.FilterByName(*name)
+		}
+		if len(tasks) == 0 {
+			cobra.CheckErr(fmt.Errorf("no task found"))
+		}
+
+		for _, project := range projects {
+			t := tasks.FilterByProjectID(project.ID)
+			if len(t) == 0 {
+				continue
+			}
+
+			cli.NewCLI(cli.Nerd).PrintTasks(t.SortByID(), project.Name, client.None)
+		}
 	},
 }
 
@@ -34,10 +62,25 @@ var taskAddCmd = &cobra.Command{
 	Aliases: []string{"a"},
 	Short:   "Add new task",
 	Run: func(cmd *cobra.Command, args []string) {
+		cl := cli.NewCLI(cli.Nerd)
+
+		var priority model.Priority
+		p := getValue(cmd, cmd.Flags().GetInt, "priority")
+
+		if p != nil {
+			if *p < 0 || *p > 3 {
+				cobra.CheckErr(fmt.Errorf("priority must be between 0 and 3"))
+			} else {
+				priority = model.Priority(*p)
+			}
+		} else {
+			priority = model.Priority(0)
+		}
+
 		request := &model.TaskCreationRequest{
 			Name:        getValue(cmd, cmd.Flags().GetString, "name"),
 			Description: getValue(cmd, cmd.Flags().GetString, "description"),
-			Priority:    getValue(cmd, cmd.Flags().GetInt, "priority"),
+			Priority:    &priority,
 			ProjectID:   getValue(cmd, cmd.Flags().GetInt64, "project"),
 			ParentID:    getValue(cmd, cmd.Flags().GetInt64, "parent"),
 			Labels:      getValue(cmd, cmd.Flags().GetStringSlice, "labels"),
@@ -65,12 +108,7 @@ var taskAddCmd = &cobra.Command{
 		}
 
 		if cmd.Flags().Changed("edit") {
-			edit, err := cli.NewEditFile(request, taskCreateExample)
-			if err != nil {
-				cobra.CheckErr(err)
-			}
-
-			if err := edit.ParseContent(request); err != nil {
+			if err := cl.StartInteractiveMode(request, taskCreateExample); err != nil {
 				cobra.CheckErr(err)
 			}
 		}
@@ -78,11 +116,11 @@ var taskAddCmd = &cobra.Command{
 		c := rpc.NewClient(network, socketPath, 5*time.Second)
 
 		task := &model.Task{}
-		if err := c.Call("Task.Create", request, task); err != nil {
+		if err := c.Call("task.create", request, task); err != nil {
 			cobra.CheckErr(err)
 		}
 
-		cli.NewCLI(cli.Nerd).PrintTasks(&cli.TaskSlice{task})
+		cl.PrintTasks(client.TaskSlice{task}, "task", client.Add)
 	},
 }
 
@@ -94,12 +132,76 @@ var taskUpdateCmd = &cobra.Command{
 	},
 }
 
-var taskDeleteCmd = &cobra.Command{
-	Use:     "remove",
-	Aliases: []string{"rm"},
-	Short:   "remove task",
+var taskMoveCmd = &cobra.Command{
+	Use:     "move",
+	Aliases: []string{"mv"},
+	Short:   "move task",
 	Run: func(cmd *cobra.Command, args []string) {
-		request := &model.TaskDeleteRequestWithID{}
+		c := rpc.NewClient(network, socketPath, 5*time.Second)
+		t := cli.NewCLI(cli.Nerd)
+
+		request := &client.TaskMoveRequestWithID{}
+
+		parent := getValue(cmd, cmd.Flags().GetString, "parent")
+
+		tasks := client.TaskSlice{}
+		if err := c.Call("task.list", nil, &tasks); err != nil {
+			cobra.CheckErr(err)
+		}
+
+		projects := client.ProjectSlice{}
+		if err := c.Call("project.list", nil, &projects); err != nil {
+			cobra.CheckErr(err)
+		}
+
+		var name *string
+		if len(args) == 1 {
+			name = &args[0]
+		} else {
+			name = getValue(cmd, cmd.Flags().GetString, "name")
+		}
+
+		if id, err := t.SelectOne(tasks.FilterByName(*name)); err != nil {
+			cobra.CheckErr(err)
+		} else {
+			request.ID = id
+		}
+
+		if parent != nil {
+			if id, error := t.SelectOne(projects.FilterByName(*parent)); error != nil {
+				cobra.CheckErr(error)
+			} else {
+				request.ProjectID = &id
+			}
+
+			if request.ProjectID == nil {
+				if id, error := t.SelectOne(tasks.FilterByName(*parent)); error != nil {
+					cobra.CheckErr(error)
+				} else {
+					request.ParentID = &id
+				}
+			}
+		}
+
+		task := &model.Task{}
+		if err := c.Call("task.move", request, task); err != nil {
+			cobra.CheckErr(err)
+		}
+
+		t.PrintTasks(client.TaskSlice{task}, "task", client.Change)
+	},
+}
+
+var taskCloseCmd = &cobra.Command{
+	Use:     "close",
+	Aliases: []string{"c"},
+	Short:   "close task",
+	Run: func(cmd *cobra.Command, args []string) {
+		t := cli.NewCLI(cli.Nerd)
+
+		request := &struct {
+			ID int64 `json:"id"`
+		}{}
 
 		id, err := cmd.Flags().GetInt64("id")
 		if err != nil {
@@ -107,11 +209,78 @@ var taskDeleteCmd = &cobra.Command{
 		}
 		request.ID = id
 
-		c := rpc.NewClient("unix", "/tmp/rx-todo.sock", 5*time.Second)
+		c := rpc.NewClient(network, socketPath, 5*time.Second)
 
-		tasks := cli.TaskSlice{}
-		if err := c.Call("Task.List", nil, &tasks); err != nil {
+		tasks := client.TaskSlice{}
+		if err := c.Call("task.list", nil, &tasks); err != nil {
 			cobra.CheckErr(err)
+		}
+
+		var name *string
+		if len(args) == 1 {
+			name = &args[0]
+		} else {
+			name = getValue(cmd, cmd.Flags().GetString, "name")
+		}
+
+		if id, err := t.SelectOne(tasks.FilterByName(*name)); err != nil {
+			cobra.CheckErr(err)
+		} else {
+			request.ID = id
+		}
+
+		task := &model.Task{}
+		if err := c.Call("task.close", request, task); err != nil {
+			cobra.CheckErr(err)
+		}
+
+		t.PrintTasks(client.TaskSlice{task}, "task", client.Change)
+	},
+}
+
+var taskDeleteCmd = &cobra.Command{
+	Use:     "remove",
+	Aliases: []string{"rm"},
+	Args:    cobra.ExactArgs(1),
+	Short:   "remove task",
+	Run: func(cmd *cobra.Command, args []string) {
+		cl := cli.NewCLI(cli.Nerd)
+
+		request := &struct {
+			ID int64 `json:"id"`
+		}{}
+
+		id, err := cmd.Flags().GetInt64("id")
+		if err != nil {
+			cobra.CheckErr(err)
+		}
+		request.ID = id
+
+		c := rpc.NewClient(network, socketPath, 5*time.Second)
+
+		tasks := client.TaskSlice{}
+		if err := c.Call("task.list", nil, &tasks); err != nil {
+			cobra.CheckErr(err)
+		}
+
+		var name *string
+		if len(args) == 1 {
+			name = &args[0]
+		} else {
+			name = getValue(cmd, cmd.Flags().GetString, "name")
+		}
+
+		ids, err := cl.SelectMultiple(tasks.FilterByName(*name))
+		if err != nil {
+			cobra.CheckErr(err)
+		}
+
+		cl.PrintTasks(tasks.FilterByIDs(ids), "task", client.Delete)
+		for _, id := range ids {
+			request.ID = id
+			if err := c.Call("task.delete", request, nil); err != nil {
+				cobra.CheckErr(err)
+			}
 		}
 	},
 }
@@ -119,7 +288,12 @@ var taskDeleteCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(taskListCmd)
 	rootCmd.AddCommand(taskAddCmd)
+	rootCmd.AddCommand(taskUpdateCmd)
+	rootCmd.AddCommand(taskMoveCmd)
+	rootCmd.AddCommand(taskCloseCmd)
 	rootCmd.AddCommand(taskDeleteCmd)
+
+	taskListCmd.Flags().StringP("name", "n", "", "filter task by name")
 
 	taskAddCmd.Flags().StringP("name", "n", "", "Task name")
 	taskAddCmd.Flags().StringP("description", "D", "", "Task description")
@@ -132,5 +306,14 @@ func init() {
 	taskAddCmd.Flags().StringSliceP("labels", "l", []string{}, "Task labels")
 	taskAddCmd.Flags().BoolP("edit", "e", false, "Eidt task")
 
+	taskMoveCmd.Flags().Int64P("id", "i", 0, "Task ID")
+	taskMoveCmd.Flags().StringP("name", "n", "", "Task name")
+	taskMoveCmd.Flags().Int64P("destination", "d", 0, "destination index")
+	taskMoveCmd.Flags().StringP("parent", "p", "", "project or parent task name")
+
+	taskCloseCmd.Flags().Int64P("id", "i", 0, "Task ID")
+	taskCloseCmd.Flags().StringP("name", "n", "", "Task name")
+
 	taskDeleteCmd.Flags().Int64P("id", "i", 0, "Task ID")
+	taskDeleteCmd.Flags().StringP("name", "n", "", "Task name")
 }

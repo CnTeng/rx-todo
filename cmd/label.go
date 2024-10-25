@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/CnTeng/rx-todo/cli"
+	"github.com/CnTeng/rx-todo/client"
 	"github.com/CnTeng/rx-todo/model"
 	"github.com/CnTeng/rx-todo/rpc"
 	"github.com/spf13/cobra"
@@ -13,14 +14,14 @@ var labelCmd = &cobra.Command{
 	Use:   "label",
 	Short: "list all labels",
 	Run: func(cmd *cobra.Command, args []string) {
-		c := rpc.NewClient("unix", "/tmp/rx-todo.sock", 5*time.Second)
+		c := rpc.NewClient(network, socketPath, 5*time.Second)
 
-		labels := cli.LabelSlice{}
+		labels := client.LabelSlice{}
 		if err := c.Call("Label.List", nil, &labels); err != nil {
 			cobra.CheckErr(err)
 		}
 
-		cli.NewCLI(cli.Nerd).PrintLabels(&labels)
+		cli.NewCLI(cli.Nerd).PrintLabels(labels, "Labels", client.None)
 	},
 }
 
@@ -34,14 +35,14 @@ var labelAddCmd = &cobra.Command{
 			Color: getValue(cmd, cmd.Flags().GetString, "color"),
 		}
 
-		c := rpc.NewClient("unix", "/tmp/rx-todo.sock", 5*time.Second)
+		c := rpc.NewClient(network, socketPath, 5*time.Second)
 
 		label := &model.Label{}
 		if err := c.Call("Label.Create", request, label); err != nil {
 			cobra.CheckErr(err)
 		}
 
-		cli.NewCLI(cli.Nerd).PrintLabels(&cli.LabelSlice{label})
+		cli.NewCLI(cli.Nerd).PrintLabels(client.LabelSlice{label}, "Labels", client.Add)
 	},
 }
 
@@ -51,7 +52,7 @@ var labelModifyCmd = &cobra.Command{
 	Short:   "modify label",
 	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		c := rpc.NewClient("unix", "/tmp/rx-todo.sock", 5*time.Second)
+		c := rpc.NewClient(network, socketPath, 5*time.Second)
 
 		request := &model.LabelUpdateRequestWithID{
 			ID: getValue(cmd, cmd.Flags().GetInt64, "id"),
@@ -66,7 +67,7 @@ var labelModifyCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		cli.NewCLI(cli.Nerd).PrintLabels(&cli.LabelSlice{label})
+		cli.NewCLI(cli.Nerd).PrintLabels(client.LabelSlice{label}, "Labels", client.Change)
 	},
 }
 

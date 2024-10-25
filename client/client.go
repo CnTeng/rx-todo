@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/CnTeng/rx-todo/model"
 )
@@ -26,21 +27,23 @@ func NewClient(server, token, storagePath string) (*Client, error) {
 }
 
 func (c *Client) Sync() error {
-	request := newRequest(
-		c.Endpoint,
-		c.Token,
-		&model.ResourceSyncRequest{},
-	)
-
-	response, err := request.withPath("resources/sync").post()
+	response, err := NewRequest(c.Endpoint, c.Token).
+		WithPath("resources/sync").
+		WithBody(&model.ResourceSyncRequest{}).
+		Post()
 	if err != nil {
 		return err
 	}
 	defer response.Close()
 
-	if err := json.NewDecoder(response).Decode(&c.Resources); err != nil {
+	if err := json.NewDecoder(response).Decode(&c.resources); err != nil {
 		return err
 	}
+
+	fmt.Println(c.resources)
+
+	c.GetProjectProgress()
+	c.GetTaskProgress()
 
 	return c.save()
 }
