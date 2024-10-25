@@ -4,7 +4,7 @@ import (
 	"cmp"
 	"slices"
 
-	"github.com/CnTeng/rx-todo/model"
+	"github.com/CnTeng/rx-todo/internal/model"
 )
 
 type LabelSlice []*model.Label

@@ -3,7 +3,7 @@ package client
 import (
 	"encoding/json"
 
-	"github.com/CnTeng/rx-todo/model"
+	"github.com/CnTeng/rx-todo/internal/model"
 )
 
 type ProjectUpdateRequestWithID struct {

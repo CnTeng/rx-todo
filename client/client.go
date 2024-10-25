@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/CnTeng/rx-todo/model"
+	"github.com/CnTeng/rx-todo/internal/model"
 )
 
 type Client struct {

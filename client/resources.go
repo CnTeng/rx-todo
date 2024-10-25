@@ -1,6 +1,6 @@
 package client
 
-import "github.com/CnTeng/rx-todo/model"
+import "github.com/CnTeng/rx-todo/internal/model"
 
 type resources struct {
 	*model.Resources

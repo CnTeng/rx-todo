@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/CnTeng/rx-todo/model"
+	"github.com/CnTeng/rx-todo/internal/model"
 )
 
 type request struct {

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/CnTeng/rx-todo/model"
+	"github.com/CnTeng/rx-todo/internal/model"
 	"github.com/adrg/xdg"
 )
 
