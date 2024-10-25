@@ -128,6 +128,9 @@ func (db *DB) GetProjects(userID int64) ([]*model.Project, error) {
 }
 
 func (db *DB) GetProjectsByUpdateTime(userID int64, updateTime *time.Time) ([]*model.Project, error) {
+	if updateTime == nil {
+		return db.GetProjects(userID)
+	}
 	return db.getProjects(getProjectsByUpdateTimeQuery, userID, updateTime)
 }
 

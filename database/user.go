@@ -85,29 +85,7 @@ func (db *DB) CreateUser(user *model.User) (*model.User, error) {
 	})
 }
 
-func (db *DB) GetUserByID(id int64) (*model.User, error) {
-	return db.fetchUser(getUserByIDQuery, id)
-}
-
-func (db *DB) GetUserByEmail(email string) (*model.User, error) {
-	return db.fetchUser(getUserByEmailQuery, email)
-}
-
-func (db *DB) GetUserByUpdateTime(id int64, updateTime *time.Time) (*model.User, error) {
-	return db.fetchUser(getUserByUpdateTimeQuery, id, updateTime)
-}
-
-func (db *DB) GetUserInboxID(id int64) (int64, error) {
-	var inboxID int64
-
-	if err := db.QueryRow(getUserInboxIDQuery, id).Scan(&inboxID); err != nil {
-		return 0, fmt.Errorf("failed to get user inbox id: %w", err)
-	}
-
-	return inboxID, nil
-}
-
-func (db *DB) fetchUser(query string, args ...any) (*model.User, error) {
+func (db *DB) getUser(query string, args ...any) (*model.User, error) {
 	user := new(model.User)
 
 	err := db.QueryRow(query, args...).Scan(
@@ -124,6 +102,31 @@ func (db *DB) fetchUser(query string, args ...any) (*model.User, error) {
 	}
 
 	return user, nil
+}
+
+func (db *DB) GetUserByID(id int64) (*model.User, error) {
+	return db.getUser(getUserByIDQuery, id)
+}
+
+func (db *DB) GetUserByEmail(email string) (*model.User, error) {
+	return db.getUser(getUserByEmailQuery, email)
+}
+
+func (db *DB) GetUserByUpdateTime(id int64, updateTime *time.Time) (*model.User, error) {
+	if updateTime == nil {
+		return db.GetUserByID(id)
+	}
+	return db.getUser(getUserByUpdateTimeQuery, id, updateTime)
+}
+
+func (db *DB) GetUserInboxID(id int64) (int64, error) {
+	var inboxID int64
+
+	if err := db.QueryRow(getUserInboxIDQuery, id).Scan(&inboxID); err != nil {
+		return 0, fmt.Errorf("failed to get user inbox id: %w", err)
+	}
+
+	return inboxID, nil
 }
 
 func (db *DB) UpdateUser(user *model.User) (*model.User, error) {

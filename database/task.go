@@ -216,6 +216,9 @@ func (db *DB) GetTasks(user int64) ([]*model.Task, error) {
 }
 
 func (db *DB) GetTasksByUpdateTime(user int64, updateTime *time.Time) ([]*model.Task, error) {
+	if updateTime == nil {
+		return db.GetTasks(user)
+	}
 	return db.getTasks(getTasksByUpdateTimeQuery, user, updateTime)
 }
 
