@@ -14,7 +14,7 @@ type Project struct {
 	Position    float64    `json:"position"`
 	Inbox       bool       `json:"inbox"`
 	Favorite    bool       `json:"favorite"`
-	SubTasks    SubTasks   `json:"sub_tasks"`
+	Progress    *Progress  `json:"progress,omitempty"`
 	Archived    bool       `json:"archived"`
 	ArchivedAt  *time.Time `json:"archived_at,omitempty"`
 }

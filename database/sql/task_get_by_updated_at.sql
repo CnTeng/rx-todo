@@ -11,8 +11,6 @@ SELECT
   project_id,
   parent_id,
   "position",
-  total_tasks,
-  done_tasks,
   done,
   done_at,
   archived,
@@ -20,7 +18,7 @@ SELECT
   created_at,
   updated_at
 FROM
-  tasks_with_sub_tasks
+  tasks
 WHERE
   user_id = $1
   AND updated_at > $2

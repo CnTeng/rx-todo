@@ -10,11 +10,6 @@ type Duration struct {
 	Unit   *string `json:"unit"`
 }
 
-type SubTasks struct {
-	Total int `json:"total"`
-	Done  int `json:"done"`
-}
-
 type Priority int
 
 const (
@@ -36,7 +31,7 @@ type Task struct {
 	ParentID    *int64     `json:"parent_id,omitempty"`
 	Position    int64      `json:"position"`
 	Labels      []*Label   `json:"labels"`
-	SubTasks    SubTasks   `json:"sub_tasks"`
+	Progress    *Progress  `json:"Progress,omitempty"`
 	Done        bool       `json:"done"`
 	DoneAt      *time.Time `json:"done_at,omitempty"`
 	Archived    bool       `json:"archived"`
@@ -72,7 +67,7 @@ type TaskMoveRequest struct {
 }
 
 // TaskUpdateRequest at least needs one of task attributes to be set
-func (r *TaskUpdateRequest) Validate() error {
+func (r *TaskUpdateRequest) validate() error {
 	if r.Name == nil && r.Description == nil &&
 		r.Due == nil && r.Duration == nil &&
 		r.Priority == nil &&
@@ -83,7 +78,7 @@ func (r *TaskUpdateRequest) Validate() error {
 	return nil
 }
 
-func (r *TaskMoveRequest) Validate() error {
+func (r *TaskMoveRequest) validate() error {
 	if r.ProjectID == nil && r.ParentID == nil {
 		return fmt.Errorf("validate: at least one of project_id or parent_id should be set")
 	}
