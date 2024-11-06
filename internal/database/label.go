@@ -76,9 +76,9 @@ func (db *DB) GetLabelByName(name string, userID int64) (*model.Label, error) {
 func (db *DB) getLabels(query string, args ...any) ([]*model.Label, error) {
 	labels := []*model.Label{}
 
-	rows, err := db.Query(query, args)
+	rows, err := db.Query(query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get labels: %w", err)
+		return nil, fmt.Errorf("db: failed to get labels: %w", err)
 	}
 	defer rows.Close()
 
