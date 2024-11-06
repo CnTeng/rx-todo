@@ -17,9 +17,6 @@ var tableConfig = table.Style{
 	},
 	Format:  table.FormatOptions{},
 	Options: table.OptionsNoBordersAndSeparators,
-	Title: table.TitleOptions{
-		Align: text.AlignCenter,
-	},
 }
 
 type cli struct {

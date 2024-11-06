@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -20,6 +21,7 @@ var config Config
 const (
 	network    = "unix"
 	socketPath = "@rx-todo.sock"
+	timeout    = 5 * time.Second
 )
 
 var rootCmd = &cobra.Command{
