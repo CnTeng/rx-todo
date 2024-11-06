@@ -42,7 +42,7 @@ func (c *Client) GetTask(id int64) *model.Task {
 	return c.storage.GetTask(id)
 }
 
-func (c *Client) GetTasks() []*model.Task {
+func (c *Client) GetTasks() TaskSlice {
 	return c.storage.GetTasks()
 }
 

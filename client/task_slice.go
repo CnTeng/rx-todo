@@ -42,9 +42,12 @@ func (ts TaskSlice) filter(condition func(*model.Task) bool) TaskSlice {
 	return filtered
 }
 
-func (ts TaskSlice) FilterByName(pattern string) TaskSlice {
+func (ts TaskSlice) FilterByName(pattern *string) TaskSlice {
+	if pattern == nil {
+		return ts
+	}
 	return ts.filter(func(t *model.Task) bool {
-		matched, _ := filepath.Match(pattern, t.Name)
+		matched, _ := filepath.Match(*pattern, t.Name)
 		return matched
 	})
 }

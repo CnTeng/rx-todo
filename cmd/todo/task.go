@@ -17,10 +17,11 @@ var taskCreateExample string
 
 var taskListCmd = &cobra.Command{
 	Use:     "list [name] [flags]...",
-	Aliases: []string{"l"},
+	Aliases: []string{"ls"},
 	Short:   "List all tasks",
 	Run: func(cmd *cobra.Command, args []string) {
-		c := rpc.NewClient(network, socketPath, 5*time.Second)
+		c := rpc.NewClient(network, socketPath, timeout)
+		cli := cli.NewCLI(cli.Nerd)
 
 		tasks := client.TaskSlice{}
 		if err := c.Call("task.list", nil, &tasks); err != nil {
@@ -32,27 +33,27 @@ var taskListCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		// Filter by name
 		var name *string
 		if len(args) == 1 {
 			name = &args[0]
 		} else {
 			name = getValue(cmd, cmd.Flags().GetString, "name")
 		}
-		if name != nil {
-			tasks = tasks.FilterByName(*name)
-		}
+
+		tasks = tasks.FilterByName(name)
 		if len(tasks) == 0 {
 			cobra.CheckErr(fmt.Errorf("no task found"))
 		}
 
-		for _, project := range projects {
-			t := tasks.FilterByProjectID(project.ID)
+		projects = projects.SortByPosition()
+		for _, p := range projects {
+			t := tasks.FilterByProjectID(p.ID).SortByPosition()
 			if len(t) == 0 {
 				continue
 			}
 
-			cli.NewCLI(cli.Nerd).PrintTasks(t.SortByID(), project.Name, client.None)
+			cli.PrintTasks(t.SortByID(), p.Name+": "+cli.PrintProgress(p.Progress, 20), client.None)
+			cmd.Println()
 		}
 	},
 }
@@ -161,7 +162,7 @@ var taskMoveCmd = &cobra.Command{
 			name = getValue(cmd, cmd.Flags().GetString, "name")
 		}
 
-		if id, err := t.SelectOne(tasks.FilterByName(*name)); err != nil {
+		if id, err := t.SelectOne(tasks.FilterByName(name)); err != nil {
 			cobra.CheckErr(err)
 		} else {
 			request.ID = id
@@ -175,7 +176,7 @@ var taskMoveCmd = &cobra.Command{
 			}
 
 			if request.ProjectID == nil {
-				if id, error := t.SelectOne(tasks.FilterByName(*parent)); error != nil {
+				if id, error := t.SelectOne(tasks.FilterByName(parent)); error != nil {
 					cobra.CheckErr(error)
 				} else {
 					request.ParentID = &id
@@ -223,7 +224,7 @@ var taskCloseCmd = &cobra.Command{
 			name = getValue(cmd, cmd.Flags().GetString, "name")
 		}
 
-		if id, err := t.SelectOne(tasks.FilterByName(*name)); err != nil {
+		if id, err := t.SelectOne(tasks.FilterByName(name)); err != nil {
 			cobra.CheckErr(err)
 		} else {
 			request.ID = id
@@ -270,7 +271,7 @@ var taskDeleteCmd = &cobra.Command{
 			name = getValue(cmd, cmd.Flags().GetString, "name")
 		}
 
-		ids, err := cl.SelectMultiple(tasks.FilterByName(*name))
+		ids, err := cl.SelectMultiple(tasks.FilterByName(name))
 		if err != nil {
 			cobra.CheckErr(err)
 		}
