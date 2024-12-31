@@ -34,6 +34,7 @@ CREATE TABLE projects (
   updated_at timestamp NOT NULL DEFAULT now(),
   PRIMARY KEY (id),
   FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+  UNIQUE (user_id, name),
   UNIQUE (user_id, child_order)
 );
 
