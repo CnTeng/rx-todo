@@ -8,8 +8,6 @@ import (
 	"github.com/CnTeng/rx-todo/client"
 	"github.com/CnTeng/rx-todo/internal/model"
 	"github.com/fatih/color"
-	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/jedib0t/go-pretty/v6/text"
 )
 
 func (c *cli) PrintProgress(progress *model.Progress, width int) string {
@@ -45,60 +43,52 @@ func (c *cli) PrintSlice(rs client.ResourceSlice, title string, status client.Re
 }
 
 func (c *cli) PrintProjects(ts client.ProjectSlice, title string, status client.ResourceStatus) {
-	tbl := table.NewWriter()
-	tbl.SetTitle(title)
-	tbl.AppendHeader(table.Row{"#", "Name", "Description", "Progress"})
-	tbl.SetStyle(tableConfig)
+	tbl := NewTable(50, true)
+	tbl.AddHeader("#", "Name", "Description", "Progress")
+	tbl.SetHeaderStyle(color.Underline)
 
 	for i, t := range ts {
-		row := table.Row{}
-
-		row = append(
-			row,
+		tbl.AddRow(
 			i+1,
 			t.Name,
 			t.Description,
 			c.PrintProgress(t.Progress, 10),
 		)
-
-		tbl.AppendRow(row)
 	}
 
-	fmt.Println(tbl.Render())
+	fmt.Print(tbl.Render())
 }
 
 func (c *cli) PrintTasks(ts client.TaskSlice, title string, status client.ResourceStatus) {
-	tbl := table.NewWriter()
-	tbl.SetTitle(title)
-	tbl.AppendHeader(table.Row{"#", "", "Name", "Description", "Progress", "Labels"})
-	tbl.SetStyle(tableConfig)
+	tbl := NewTable(80, true)
+	tbl.AddHeader("ID", "  ", "Labels", "Name", "Progress")
+	tbl.SetHeaderStyle(color.Underline)
 
-	for i, t := range ts {
-		row := table.Row{}
+	for _, t := range ts {
+		row := []any{}
 
-		row = append(row, i+1)
+		row = append(row, t.ID)
 
-		priorityColor := text.FgWhite
+		priorityColor := color.FgWhite
 
 		switch t.Priority {
 		case model.PriorityNone:
-			priorityColor = text.FgWhite
+			priorityColor = color.FgWhite
 		case model.PriorityLow:
-			priorityColor = text.FgBlue
+			priorityColor = color.FgBlue
 		case model.PriorityMedium:
-			priorityColor = text.FgYellow
+			priorityColor = color.FgYellow
 		case model.PriorityHigh:
-			priorityColor = text.FgRed
+			priorityColor = color.FgRed
 		}
 
 		if t.Done {
-			row = append(row, priorityColor.Sprint(c.icons.done))
+			row = append(row, color.New(priorityColor).Sprint(c.icons.done))
 		} else {
-			row = append(row, priorityColor.Sprint(c.icons.undone))
+			row = append(row, color.New(priorityColor).Sprint(c.icons.undone))
 		}
 
 		labels := make([]string, len(t.Labels))
-
 		if t.Labels != nil {
 			for i, l := range t.Labels {
 				labels[i] = color.BgRGB(strToRGB(l.Color)).Sprint(l.Name)
@@ -107,36 +97,28 @@ func (c *cli) PrintTasks(ts client.TaskSlice, title string, status client.Resour
 
 		row = append(
 			row,
-			t.Name,
-			t.Description,
-			c.PrintProgress(t.Progress, 10),
 			strings.Join(labels, " "),
+			t.Name,
+			c.PrintProgress(t.Progress, 10),
 		)
 
-		tbl.AppendRow(row)
+		tbl.AddRow(row...)
 	}
 
-	fmt.Println(tbl.Render())
+	fmt.Print(tbl.Render())
 }
 
 func (c *cli) PrintLabels(ls client.LabelSlice, title string, status client.ResourceStatus) {
-	tbl := table.NewWriter()
-	tbl.SetTitle(title)
-	tbl.AppendHeader(table.Row{"#", "Label", "Color"})
-	tbl.SetStyle(tableConfig)
+	tbl := NewTable(50, true)
+	tbl.AddHeader("#", "Label", "Color")
 
 	for _, l := range ls {
-		row := table.Row{}
-
-		row = append(
-			row,
-			text.FgYellow.Sprint(l.ID),
+		tbl.AddRow(
+			color.YellowString("%d", l.ID),
 			l.Name,
 			color.BgRGB(strToRGB(l.Color)).Sprint(l.Color),
 		)
-
-		tbl.AppendRow(row)
 	}
 
-	fmt.Println(tbl.Render())
+	fmt.Print(tbl.Render())
 }

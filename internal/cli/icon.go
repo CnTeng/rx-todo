@@ -1,6 +1,6 @@
 package cli
 
-import "github.com/jedib0t/go-pretty/v6/text"
+import "github.com/fatih/color"
 
 type progressIcons struct {
 	none      string
@@ -22,8 +22,8 @@ type icons struct {
 }
 
 var nerdIcons = icons{
-	done:   " ",
-	undone: " ",
+	done:   "",
+	undone: "",
 
 	none:   " ",
 	add:    "+",
@@ -75,16 +75,16 @@ func newIcons(t iconType) *icons {
 }
 
 func (i *icons) withColor() *icons {
-	i.done = text.FgGreen.Sprint(i.done)
+	i.done = color.GreenString(i.done)
 
-	i.add = text.FgGreen.Sprint(i.add)
-	i.change = text.FgYellow.Sprint(i.change)
-	i.delete = text.FgRed.Sprint(i.delete)
+	i.add = color.GreenString(i.add)
+	i.change = color.YellowString(i.change)
+	i.delete = color.RedString(i.delete)
 
-	i.progress.done = text.FgGreen.Sprint(i.progress.done)
-	i.progress.undone = text.Faint.Sprint(i.progress.undone)
-	i.progress.separator = text.Faint.Sprint(i.progress.separator)
-	i.progress.none = text.Faint.Sprint(i.progress.none)
+	i.progress.done = color.GreenString(i.progress.done)
+	// i.progress.undone = color..Sprint(i.progress.undone)
+	// i.progress.separator = text.Faint.Sprint(i.progress.separator)
+	// i.progress.none = text.Faint.Sprint(i.progress.none)
 
 	return i
 }
