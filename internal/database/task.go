@@ -55,6 +55,8 @@ func (db *DB) CreateTask(task *model.Task) (*model.Task, error) {
 	var dueRecurring *bool
 	var durationAmount *int
 	var durationUnit *string
+	var projectID int64
+	var parentID int64
 
 	if task.Due != nil {
 		dueDate = task.Due.Date
@@ -64,6 +66,18 @@ func (db *DB) CreateTask(task *model.Task) (*model.Task, error) {
 	if task.Duration != nil {
 		durationAmount = task.Duration.Amount
 		durationUnit = task.Duration.Unit
+	}
+
+	if task.ProjectID == nil {
+		projectID = 0
+	} else {
+		projectID = *task.ProjectID
+	}
+
+	if task.ParentID == nil {
+		parentID = 0
+	} else {
+		parentID = *task.ParentID
 	}
 
 	return task, db.withTx(func(tx *sql.Tx) error {
@@ -77,10 +91,14 @@ func (db *DB) CreateTask(task *model.Task) (*model.Task, error) {
 			durationAmount,
 			durationUnit,
 			task.Priority,
-			task.ProjectID,
-			task.ParentID,
-			task.Position,
-		).Scan(&task.ID, &task.CreatedAt, &task.UpdatedAt); err != nil {
+			projectID,
+			parentID,
+		).Scan(
+			&task.ID,
+			&task.Position,
+			&task.CreatedAt,
+			&task.UpdatedAt,
+		); err != nil {
 			return fmt.Errorf("failed to create task: %w", err)
 		}
 

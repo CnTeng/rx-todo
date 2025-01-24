@@ -8,11 +8,11 @@ WITH
       user_id = $1
       AND (
         (
-          $9 IS NOT NULL
+          $9 != 0
           AND project_id = $9
         )
         OR (
-          $10 IS NOT NULL
+          $10 != 0
           AND parent_id = $10
         )
       )
@@ -37,8 +37,8 @@ VALUES
     ROW ($4, $5),
     ROW ($6, $7),
     $8,
-    $9,
-    $10,
+    nullif($9, 0),
+    nullif($10, 0),
     (
       SELECT
         new_position
