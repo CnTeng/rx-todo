@@ -63,8 +63,8 @@ github.com/valyala/tcplisten v1.0.0 h1:rBHj/Xf+E1tRGZyWIWwJDiRY0zc1Js+CV5DqwacVS
 github.com/valyala/tcplisten v1.0.0/go.mod h1:T0xQ8SeCZGxckz9qRXTfG43PvQ/mcWh7FwZEA7Ioqkc=
 github.com/xyproto/randomstring v1.0.5 h1:YtlWPoRdgMu3NZtP45drfy1GKoojuR7hmRcnhZqKjWU=
 github.com/xyproto/randomstring v1.0.5/go.mod h1:rgmS5DeNXLivK7YprL0pY+lTuhNQW3iGxZ18UQApw/E=
-golang.org/x/crypto v0.32.0 h1:euUpcYgM8WcP71gNpTqQCn6rC2t6ULUPiOzfWaXVVfc=
-golang.org/x/crypto v0.32.0/go.mod h1:ZnnJkOaASj8g0AjIduWNlq2NRxL0PlBrbKVyZ6V/Ugc=
+golang.org/x/crypto v0.33.0 h1:IOBPskki6Lysi0lo9qQvbxiQ+FvsCC/YWOecCHAixus=
+golang.org/x/crypto v0.33.0/go.mod h1:bVdXmD7IV/4GdElGPozy6U7lWdRXA4qyRVGJV57uQ5M=
 golang.org/x/exp/event v0.0.0-20250106191152-7588d65b2ba8 h1:CnLlD0nwlDf+uvDMvwlWGZUJDeNFGN/IJ4bVn7uchAQ=
 golang.org/x/exp/event v0.0.0-20250106191152-7588d65b2ba8/go.mod h1:R4Nj8+ac1oNAVEp6jJGgYrsz0uySlWGocGQ5A74W3DY=
 golang.org/x/exp/jsonrpc2 v0.0.0-20250106191152-7588d65b2ba8 h1:mLvDDs2yKdjEQufFWtLF3hOHfDBe8c4ckx7rqctPqLc=
