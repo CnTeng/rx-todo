@@ -1,18 +1,18 @@
 {
-  description = "NixOS Configuration";
+  description = "A simple todo app with server";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
 
-    treefmt = {
-      url = "github:numtide/treefmt-nix";
+    git-hooks-nix = {
+      url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    pre-commit = {
-      url = "github:cachix/pre-commit-hooks.nix";
+    treefmt = {
+      url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -26,7 +26,7 @@
       ];
 
       imports = [
-        inputs.pre-commit.flakeModule
+        inputs.git-hooks-nix.flakeModule
         inputs.treefmt.flakeModule
       ];
 
